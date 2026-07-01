@@ -1,0 +1,6 @@
+what if we have a browser extension to rewrite claude prompts in such a way that it uses less tokens for the same task, without compromising on quality, like maybe reducing filler words, using caveman language, reducing unnecessary context. it should also display exactly how much of my current session is being used up, when it will reset and also my weekly session limit, and when that will reset
+(represent in usage limit graphical representation)
+
+it should have a mode like minimise tokens or maximise efficiency, and should alter the prompt respectively, should also show how much tokens i have used up in my chat. maybe we can use one shot inference, or other prompt engineering methods to refine the prompt better and get more efficient results
+
+also lets explore a way to get context file, maybe as an .md file from an existing chat so that if the user runs out of tokens in a particular chat, he can extract the context file and pursue his goal in another chat/model. like basically when the function is called(some button press, called retrieve context) the full chat should be scanned and analysed and it should give the user the full context in the form of a .md file, and maybe guide the user like attach this document for more reference

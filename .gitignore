@@ -1,0 +1,5 @@
+*.zip
+.system_generated/
+.gemini/
+/brain/
+/Docs/

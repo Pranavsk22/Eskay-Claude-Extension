@@ -1,0 +1,607 @@
+/* toolbar.css - Style system for Eskay Injected UI */
+
+:root {
+  --cb-orange: #E8721C;
+  --cb-violet: #7C3AED;
+  --cb-amber: #F59E0B;
+  --cb-red: #EF4444;
+  --cb-surface: rgba(26, 26, 25, 0.95);
+  --cb-border: rgba(255, 255, 255, 0.08);
+  --cb-text: #E5E7EB;
+  --cb-text-muted: #9CA3AF;
+  --cb-bg-hover: rgba(255, 255, 255, 0.06);
+}
+
+/* Header Token Badge (adjacent to chat trigger) */
+.ek-header-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--cb-text-muted);
+  padding: 6px 12px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--cb-border);
+  border-radius: 8px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.ek-header-mini-bar {
+  display: inline-block;
+  width: 40px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.2);
+  vertical-align: middle;
+}
+
+.ek-header-mini-bar-fill {
+  height: 100%;
+  background-color: var(--cb-orange);
+  border-radius: 2px;
+}
+
+.ek-header-cache-active {
+  color: #10B981;
+  font-weight: 600;
+}
+
+/* Base Input Toolbar Container */
+#eskay-toolbar {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  color: var(--cb-text);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  user-select: none;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Header Row */
+.ek-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ek-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ek-logo-dot {
+  width: 10px;
+  height: 10px;
+  background-color: var(--cb-orange);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px var(--cb-orange);
+  animation: ek-pulse 2s infinite ease-in-out;
+}
+
+@keyframes ek-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Coloured Premium Action Buttons */
+.ek-btn-minimize {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9) !important;
+  border: 1px solid rgba(124, 58, 237, 0.4) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ek-btn-minimize:hover {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED) !important;
+  border-color: #8B5CF6 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.ek-btn-minimize:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+}
+
+.ek-btn-maximize {
+  background: linear-gradient(135deg, #E8721C, #D96216) !important;
+  border: 1px solid rgba(232, 114, 28, 0.4) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(232, 114, 28, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ek-btn-maximize:hover {
+  background: linear-gradient(135deg, #F97316, #E8721C) !important;
+  border-color: #F97316 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 114, 28, 0.4);
+}
+
+.ek-btn-maximize:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(232, 114, 28, 0.2);
+}
+
+.ek-btn-retrieve {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--cb-border) !important;
+  color: var(--cb-text) !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease;
+}
+
+.ek-btn-retrieve:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.ek-btn-retrieve:active {
+  transform: translateY(0);
+}
+
+/* Action Buttons Group */
+.ek-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ek-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.ek-btn {
+  background-color: var(--cb-bg-hover);
+  border: 1px solid var(--cb-border);
+  color: var(--cb-text);
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.ek-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+
+.ek-delta {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #10B981;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  display: none;
+  animation: ek-fade-in 0.3s ease;
+}
+
+@keyframes ek-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ek-toggle-sub {
+  background: none;
+  border: none;
+  color: var(--cb-text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ek-toggle-sub:hover {
+  background-color: var(--cb-bg-hover);
+  color: var(--cb-text);
+}
+
+.ek-toggle-sub svg {
+  transition: transform 0.2s ease;
+}
+
+.ek-toggle-sub.open svg {
+  transform: rotate(180deg);
+}
+
+/* Sub-options panel */
+.ek-sub-panel {
+  display: none;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  animation: ek-slide-down 0.2s ease-out;
+}
+
+@keyframes ek-slide-down {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ek-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--cb-text-muted);
+  transition: color 0.2s ease;
+}
+
+.ek-checkbox-label:hover {
+  color: var(--cb-text);
+}
+
+.ek-checkbox-label input {
+  cursor: pointer;
+  accent-color: var(--cb-orange);
+}
+
+/* Dashboard & Progress Bars */
+.ek-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
+}
+
+.ek-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ek-bar-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--cb-text-muted);
+}
+
+.ek-bar-label {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.ek-bar-meta {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 10px;
+}
+
+.ek-bar-outer {
+  position: relative;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: visible; /* Need to show markers */
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.ek-bar-inner {
+  height: 100%;
+  width: 0%;
+  background-color: var(--cb-orange);
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+.ek-bar-inner.warning {
+  background-color: var(--cb-amber);
+  box-shadow: 0 0 4px var(--cb-amber);
+}
+
+.ek-bar-inner.critical {
+  background-color: var(--cb-red);
+  box-shadow: 0 0 6px var(--cb-red);
+}
+
+/* Time elapsed window marker */
+.ek-bar-marker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  background-color: #fff;
+  box-shadow: 0 0 4px rgba(255,255,255,0.8);
+  pointer-events: none;
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: none; /* hidden if no resetTime available */
+}
+
+/* Cache Timer text specific styling */
+.ek-cache-timer {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 10px;
+  color: var(--cb-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ek-cache-timer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #9CA3AF;
+  display: inline-block;
+}
+
+.ek-cache-timer-dot.active {
+  background-color: #10B981;
+  box-shadow: 0 0 4px #10B981;
+}
+
+/* Tooltips */
+.ek-tooltip {
+  position: absolute;
+  z-index: 100001;
+  background-color: #1e1e1e;
+  border: 1px solid var(--cb-border);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: pre-line;
+  max-width: 280px;
+  line-height: 1.4;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* Custom Injected Toast Notification */
+.ek-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: rgba(18, 18, 18, 0.95);
+  border: 1px solid var(--cb-orange);
+  border-radius: 8px;
+  padding: 14px 20px;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 100000;
+  font-size: 12px;
+  max-width: 320px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+  animation: ek-toast-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ek-toast-slide {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ek-toast-fadeout {
+  animation: ek-toast-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ek-toast-fade {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-10px) scale(0.95); }
+}
+
+/* Light Mode Overrides */
+#eskay-toolbar.ek-light-mode {
+  background-color: #FFFFFF !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-logo-group {
+  color: #000000 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-sub-panel {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-bar-outer {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-bar-header,
+#eskay-toolbar.ek-light-mode .ek-checkbox-label {
+  color: #000000 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-checkbox-label:hover {
+  color: #000000 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-toggle-sub {
+  color: #000000 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-toggle-sub:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  color: #000000 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-delta {
+  color: #047857 !important; /* Slightly darker green for light mode contrast */
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Light Mode Buttons with Solid Black Text */
+#eskay-toolbar.ek-light-mode .ek-btn {
+  color: #000000 !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  font-weight: 600 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-btn-minimize {
+  background: #F3E8FF !important; /* Soft premium purple */
+  border-color: #C084FC !important;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1);
+}
+
+#eskay-toolbar.ek-light-mode .ek-btn-minimize:hover {
+  background: #E9D5FF !important;
+  border-color: #A855F7 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-btn-maximize {
+  background: #FFEDD5 !important; /* Soft premium orange */
+  border-color: #FDBA74 !important;
+  box-shadow: 0 1px 3px rgba(232, 114, 28, 0.1);
+}
+
+#eskay-toolbar.ek-light-mode .ek-btn-maximize:hover {
+  background: #FED7AA !important;
+  border-color: #F97316 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-btn-retrieve {
+  background-color: #F3F4F6 !important; /* Soft grey */
+  border-color: #D1D5DB !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-btn-retrieve:hover {
+  background-color: #E5E7EB !important;
+  border-color: #9CA3AF !important;
+}
+
+/* Brutal Mode Switch Styles */
+.ek-brutal-switch-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cb-text-muted);
+  margin-left: 12px;
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+.ek-brutal-switch-container:hover {
+  color: var(--cb-text);
+}
+
+.ek-brutal-switch-label {
+  font-size: 11px;
+}
+
+.ek-brutal-checkbox {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ek-brutal-slider {
+  width: 32px;
+  height: 18px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--cb-border);
+  border-radius: 9px;
+  position: relative;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+#eskay-toolbar.ek-light-mode .ek-brutal-slider {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.ek-brutal-slider::before {
+  content: "";
+  position: absolute;
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+#eskay-toolbar.ek-light-mode .ek-brutal-slider::before {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.ek-brutal-checkbox:checked + .ek-brutal-slider {
+  background-color: var(--cb-red);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
+}
+
+.ek-brutal-checkbox:checked + .ek-brutal-slider::before {
+  transform: translateX(14px);
+}
+
+#eskay-toolbar.ek-light-mode .ek-brutal-switch-container {
+  color: #000000 !important;
+}
+
+#eskay-toolbar.ek-light-mode .ek-brutal-checkbox:checked + .ek-brutal-slider {
+  background-color: var(--cb-red) !important;
+  border-color: var(--cb-red) !important;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2) !important;
+}
+

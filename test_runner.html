@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Eskay Test Runner</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #f5c2e7;
+            border-bottom: 2px solid #45475a;
+            padding-bottom: 10px;
+        }
+        .result {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .pass {
+            background-color: rgba(166, 227, 161, 0.15);
+            color: #a6e3a1;
+            border-left: 5px solid #a6e3a1;
+        }
+        .fail {
+            background-color: rgba(243, 139, 168, 0.15);
+            color: #f38ba8;
+            border-left: 5px solid #f38ba8;
+        }
+        #status-header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .status-pass {
+            background-color: #a6e3a1;
+            color: #11111b;
+        }
+        .status-fail {
+            background-color: #f38ba8;
+            color: #11111b;
+        }
+    </style>
+</head>
+<body>
+    <h1>Eskay Optimizer Tests</h1>
+    <div id="status-header">Running tests...</div>
+    <div id="test-results"></div>
+
+    <script src="eskay/src/optimizer.js"></script>
+    <script>
+        const resultsDiv = document.getElementById('test-results');
+        const statusHeader = document.getElementById('status-header');
+        let allPassed = true;
+
+        function logResult(passed, message) {
+            const div = document.createElement('div');
+            div.className = `result ${passed ? 'pass' : 'fail'}`;
+            div.innerText = `${passed ? '✅ PASS' : '❌ FAIL'}: ${message}`;
+            resultsDiv.appendChild(div);
+            if (!passed) allPassed = false;
+        }
+
+        try {
+            const EskayOptimizer = window.EskayOptimizer;
+            if (!EskayOptimizer) {
+                throw new Error("EskayOptimizer not loaded");
+            }
+
+            // 1. Test inferPersona
+            const resumePrompt = 'Optimize my resume for a software engineer role.';
+            const optimizedResume = EskayOptimizer.optimize(resumePrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedResume.includes('a professional resume writer crafting a CV for a candidate targeting competitive roles'),
+                'Should infer new resume/hiring persona'
+            );
+            logResult(
+                !optimizedResume.includes('Task:'),
+                'Should NOT prepend Task: header to maximized prompt'
+            );
+
+            const designPrompt = 'How does the Figma layout look for my design poster?';
+            const optimizedDesign = EskayOptimizer.optimize(designPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedDesign.includes('a senior design mentor teaching interface principles to junior designers'),
+                'Should infer new design persona'
+            );
+
+            const codingPrompt = 'Write a python script to parse logs.';
+            const optimizedCoding = EskayOptimizer.optimize(codingPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedCoding.includes('a principal software architect drafting a core microservice handling 50,000 requests per second'),
+                'Should infer software engineering persona'
+            );
+
+            const examPrompt = 'Identify which of these MCQs are most important.';
+            const optimizedExam = EskayOptimizer.optimize(examPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedExam.includes('a top-tier professional producing high-quality work'),
+                'Should map exam query to default domain generate persona'
+            );
+
+            const postgresPrompt = 'Write a postgresql query to join tables.';
+            const optimizedPostgres = EskayOptimizer.optimize(postgresPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedPostgres.includes('a lead database architect designing the schema for a high-throughput transaction system'),
+                'Should infer database engineering persona for postgresql keyword'
+            );
+
+            // Test data_science keyword pruning
+            const generalAiPrompt = 'I asked Claude to review this code and it is working.';
+            const optimizedGeneralAi = EskayOptimizer.optimize(generalAiPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedGeneralAi.includes('a staff engineer conducting a high-stakes code review for a system-critical pull request before deployment'),
+                'Claude should trigger code evaluate persona'
+            );
+
+            // Test new software engineer keyword match (Issue 9 fix)
+            const softwareEngineerQuery = 'i need the persona of a software engineer, not a distinguished machine learning scientist reviewing models before publication...';
+            const optimizedQuery = EskayOptimizer.optimize(softwareEngineerQuery, 'maximize', { persona: true });
+            logResult(
+                optimizedQuery.includes('principal software architect drafting a core microservice handling 50,000 requests per second'),
+                'Query asking for software engineer persona should match software architect'
+            );
+
+            const defaultPrompt = 'How does the sun work?';
+            const optimizedDefault = EskayOptimizer.optimize(defaultPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedDefault.includes('master educator explaining a complex topic'),
+                'Should fallback to default domain explain persona'
+            );
+
+            // 2. Test detectPromptFeatures
+            const detectText = `
+You are a senior software engineer.
+Can you explain this step by step?
+[SAMPLE_INPUT] -> [SAMPLE_OUTPUT]
+Provide a brutal, honest, and completely unglazed critique. Do not sugarcoat, soften, or glaze any observations. The sole purpose of this feedback is improvement, so direct, raw, and brutally honest critique is extremely critical.
+`;
+            const features = EskayOptimizer.detectPromptFeatures(detectText);
+            logResult(features.persona === true, 'Should detect persona');
+            logResult(features.step === true, 'Should detect step-by-step');
+            logResult(features.oneshot === true, 'Should detect oneshot template with ascii arrow');
+            logResult(features.multishot === false, 'Should not detect multishot with only 1 instance');
+            logResult(features.brutal === true, 'Should detect brutal mode template');
+
+            // Test custom examples
+            const customExamplesText = `
+apples -> oranges
+bananas -> grapes
+cherries -> melons
+`;
+            const featuresMs = EskayOptimizer.detectPromptFeatures(customExamplesText);
+            logResult(featuresMs.multishot === true, 'Should detect multishot for 3 custom arrows');
+            logResult(featuresMs.oneshot === false, 'Should be false for oneshot if multishot is active');
+
+            // Test expanded persona detection
+            const asARoleText = 'as a senior hiring manager, what would you think?';
+            logResult(EskayOptimizer.detectPromptFeatures(asARoleText).persona === true, 'Should detect persona starting with "as a"');
+            const assumeRoleText = 'assume the role of a software testing specialist.';
+            logResult(EskayOptimizer.detectPromptFeatures(assumeRoleText).persona === true, 'Should detect persona starting with "assume the role of"');
+
+            // 3. Test sanitize
+            const dirtyText = `You are a Chief Board Examiner who is setting the paper. You determine what questions among these you would set along with their probability.
+
+Analyze this CV.
+
+[SAMPLE_INPUT] -> [SAMPLE_OUTPUT]
+Provide a brutal, honest, and completely unglazed critique. Do not sugarcoat, soften, or glaze any observations. The sole purpose of this feedback is improvement, so direct, raw, and brutally honest critique is extremely critical.`;
+
+            const sanitized = EskayOptimizer.sanitize(dirtyText);
+            logResult(
+                sanitized === 'Analyze this CV.',
+                `Should sanitize prepended persona, trailing templates (with ascii arrows), and brutal feedback. Got: "${sanitized}"`
+            );
+
+            // 4. Test applySubOptions
+            const prompt = 'Please review my resume.';
+            const withOneShot = EskayOptimizer.applySubOptions(prompt, { oneshot: true });
+            logResult(
+                withOneShot.includes('[SAMPLE_INPUT] -> [SAMPLE_OUTPUT]'),
+                'Should append one-shot template with ascii arrow'
+            );
+
+            const withMultiShot = EskayOptimizer.applySubOptions(prompt, { multishot: true });
+            logResult(
+                withMultiShot.includes('[SAMPLE_INPUT_1] -> [SAMPLE_OUTPUT_1]'),
+                'Should append multi-shot template with ascii arrow'
+            );
+            logResult(
+                withMultiShot.includes('[SAMPLE_INPUT_3] -> [SAMPLE_OUTPUT_3]'),
+                'Should append all 3 multi-shot templates with ascii arrows'
+            );
+
+            // 5. Test Intent Detection
+            logResult(EskayOptimizer.detectIntent('Can you fix this bug?') === 'diagnose', 'Intent: Diagnose');
+            logResult(EskayOptimizer.detectIntent('Write a story.') === 'generate', 'Intent: Generate');
+            logResult(EskayOptimizer.detectIntent('Please review my draft.') === 'evaluate', 'Intent: Evaluate');
+            logResult(EskayOptimizer.detectIntent('How does a car engine work?') === 'explain', 'Intent: Explain');
+            logResult(EskayOptimizer.detectIntent('Should I use SQL or NoSQL?') === 'decide', 'Intent: Decide');
+            logResult(EskayOptimizer.detectIntent('Translate this into Spanish.') === 'transform', 'Intent: Transform');
+
+            // 6. Test Caveman Compression (Issue 7 test cases)
+            const cavemanCases = [
+                { input: 'I just think that I like ponies', expected: 'Like Pony' },
+                { input: 'do the work give me the output in the form of concise paragraphs', expected: 'Give Output Paragraphs' },
+                { input: 'Could you please help me understand the concept of recursion in Python?', expected: 'Explain Recursion Python' },
+                { input: 'I was thinking that maybe we could refactor this function to be more efficient', expected: 'Refactor Function More Efficient' },
+                { input: 'I would like you to write a function that takes an array and returns the sum of all elements', expected: 'Write Function Take Array Return Sum Elements' },
+                { input: 'Can you give me a brief explanation of how neural networks work?', expected: 'Explain Neural Networks' },
+                { input: 'I\'m trying to figure out why my API call is returning a 401 error', expected: 'Why API Call Return 401 Error' }
+            ];
+
+            cavemanCases.forEach((tc, idx) => {
+                const comp = EskayOptimizer.optimize(tc.input, 'minimize');
+                logResult(
+                    comp === tc.expected,
+                    `Caveman case ${idx + 1}: "${tc.input}" -> "${comp}" (expected: "${tc.expected}")`
+                );
+            });
+
+            // 7. Test Caveman Compression Code Block Preservation
+            const codePreserveText = 'I would like you to write a function like `const a = 123;` without any comments.';
+            const optimizedCodePreserve = EskayOptimizer.optimize(codePreserveText, 'minimize');
+            logResult(
+                optimizedCodePreserve.includes('`const a = 123;`'),
+                'Should preserve inline code blocks verbatim'
+            );
+
+            // Set final header
+            if (allPassed) {
+                statusHeader.className = 'status-pass';
+                statusHeader.innerText = 'ALL TESTS PASSED SUCCESSFULLY';
+            } else {
+                statusHeader.className = 'status-fail';
+                statusHeader.innerText = 'SOME TESTS FAILED';
+            }
+
+        } catch (error) {
+            logResult(false, `Unexpected error: ${error.message}`);
+            statusHeader.className = 'status-fail';
+            statusHeader.innerText = 'ERROR OCCURRED';
+        }
+    </script>
+</body>
+</html>

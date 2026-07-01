@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Eskay",
+  "version": "1.0",
+  "description": "Real-time token counter, usage dashboard, and prompt optimizer for Claude.ai",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "src/o200k_base.js",
+        "src/tokenizer.js",
+        "src/optimizer.js",
+        "src/contextExporter.js",
+        "src/usageTracker.js",
+        "src/ui.js",
+        "src/content.js"
+      ],
+      "css": [
+        "styles/toolbar.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/inject.js"
+      ],
+      "matches": [
+        "https://claude.ai/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
