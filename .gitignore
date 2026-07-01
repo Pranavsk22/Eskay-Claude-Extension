@@ -1,4 +1,5 @@
 *.zip
+!eskay.zip
 .system_generated/
 .gemini/
 /brain/
