@@ -236,6 +236,107 @@ Provide a brutal, honest, and completely unglazed critique. Do not sugarcoat, so
                 'Should preserve inline code blocks verbatim'
             );
 
+            // 8. Test Better Prompting Generic Request Replacements
+            const testCases = [
+                {
+                    input: 'Explain it to me: how does standard deviation work?',
+                    expectedIn: 'Act as a master educator'
+                },
+                {
+                    input: 'What is it?',
+                    expectedIn: 'Give me non-obvious angles.'
+                },
+                {
+                    input: 'Give me information about microservices.',
+                    expectedIn: 'Analyze microservices through psychology, strategy, and positioning.'
+                },
+                {
+                    input: 'Content ideas',
+                    expectedIn: 'Write it for someone who already knows the basics.'
+                },
+                {
+                    input: 'Make me a summary.',
+                    expectedIn: 'I want a non-generic answer.'
+                },
+                {
+                    input: 'Examples',
+                    expectedIn: 'Improve this without softening it.'
+                },
+                {
+                    input: 'Benefits of remote work.',
+                    expectedIn: 'Give me the version nobody dares to say about remote work.'
+                },
+                {
+                    input: 'Strategies for raising capital.',
+                    expectedIn: 'Break raising capital down.'
+                },
+                {
+                    input: 'Tips for productivity.',
+                    expectedIn: 'Challenge productivity.'
+                },
+                {
+                    input: 'Make it more professional',
+                    expectedIn: 'Make sure my client understands it in 5 seconds.'
+                },
+                {
+                    input: 'Improve it',
+                    expectedIn: 'Improve it using 3 criteria: clarity, pacing, and CTA.'
+                },
+                {
+                    input: 'Make it shorter',
+                    expectedIn: 'Summarize it in 3 sentences without losing the main point.'
+                },
+                {
+                    input: 'Make it sound natural',
+                    expectedIn: 'Write it the way I speak, without jargon.'
+                },
+                {
+                    input: 'Write a post about cooking recipes.',
+                    expectedIn: 'Write a post for [client] about cooking recipes with a hook in line 1.'
+                },
+                {
+                    input: 'I need content ideas',
+                    expectedIn: 'Give me 5 Reel ideas with the hook and format.'
+                },
+                {
+                    input: 'Make it more persuasive',
+                    expectedIn: 'Make it more persuasive using this real objection: [X].'
+                },
+                {
+                    input: 'Write me a caption',
+                    expectedIn: 'Give me 3 versions and tell me which one you recommend.'
+                }
+            ];
+
+            testCases.forEach((tc, idx) => {
+                const opt = EskayOptimizer.optimize(tc.input, 'maximize');
+                logResult(
+                    opt.includes(tc.expectedIn),
+                    `Better Prompting case ${idx + 1}: "${tc.input}" should contain "${tc.expectedIn}"`
+                );
+            });
+
+            // Test Fix this: non-coding vs coding domains
+            const optFixWriting = EskayOptimizer.optimize('Fix this sentence about marketing.', 'maximize');
+            logResult(
+                optFixWriting.includes('Fix spelling and rhythm without changing my style.'),
+                'Fix this (writing/marketing domain) should be replaced with spelling and rhythm prompt'
+            );
+
+            const optFixCoding = EskayOptimizer.optimize('Fix this python script: def f(): pass', 'maximize');
+            logResult(
+                !optFixCoding.includes('Fix spelling and rhythm without changing my style.'),
+                'Fix this (coding/python domain) should NOT be replaced with spelling and rhythm prompt'
+            );
+
+            // Test legal advice/NDA signing intent and persona improvements
+            const ndaPrompt = 'I need legal advice on this NDA I am going to sign. i have attached it . now give me your best advice';
+            const optimizedNda = EskayOptimizer.optimize(ndaPrompt, 'maximize', { persona: true });
+            logResult(
+                optimizedNda.includes('a corporate technology counsel reviewing an agreement before signing. You highlight hidden liabilities, unfavorable clauses'),
+                'NDA advice request should correctly resolve to legal evaluate persona'
+            );
+
             // Set final header
             if (allPassed) {
                 statusHeader.className = 'status-pass';

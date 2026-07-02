@@ -105,25 +105,11 @@
       ]
     },
     {
-      intent: 'generate',
-      patterns: [
-        /^(write|create|generate|make|build|draft|produce|give me|show me|output)\b/im,
-        /\b(write me|create me|build me|make me|generate me)\b/i,
-        /\bi (need|want) (a|an|the|to)\b/i,
-      ]
-    },
-    {
       intent: 'evaluate',
       patterns: [
-        /\b(review|critique|feedback|assess|evaluate|check|is this good|improve|rate|score|what do you think of|thoughts on)\b/i,
+        /\b(review|critique|feedback|assess|evaluate|check|is this good|improve|rate|score|what do you think of|thoughts on|advice|opinion|audit)\b/i,
         /^(here is|here's|this is|below is|attached is|the following is)\b/im,
-      ]
-    },
-    {
-      intent: 'explain',
-      patterns: [
-        /\b(explain|how does|how do|what is|what are|help me understand|teach me|walk me through|clarify|describe)\b/i,
-        /\bwhat('s| is) (the difference|a|an|the concept|the idea|the purpose)\b/i,
+        /\b(sign|signing|attached)\b/i,
       ]
     },
     {
@@ -134,9 +120,24 @@
       ]
     },
     {
+      intent: 'explain',
+      patterns: [
+        /\b(explain|how does|how do|what is|what are|help me understand|teach me|walk me through|clarify|describe)\b/i,
+        /\bwhat('s| is) (the difference|a|an|the concept|the idea|the purpose)\b/i,
+      ]
+    },
+    {
       intent: 'transform',
       patterns: [
         /\b(rewrite|rephrase|translate|convert|refactor|restructure|simplify|shorten|expand|summarize|condense|paraphrase|clean up|tidy)\b/i,
+      ]
+    },
+    {
+      intent: 'generate',
+      patterns: [
+        /^(write|create|generate|make|build|draft|produce|give me|show me|output)\b/im,
+        /\b(write me|create me|build me|make me|generate me)\b/i,
+        /\bi (need|want) (a|an|the|to)\b/i,
       ]
     },
   ];
@@ -656,10 +657,10 @@
       },
       legal: {
         diagnose:   'a corporate attorney identifying a loophole in an NDA that could expose proprietary source code. You identify the ambiguous clause, explain the potential exposure, and rewrite it for absolute protection',
-        generate:   'a technology counsel drafting a master services agreement for an enterprise client. You write precise, enforceable terms covering liability, intellectual property, and service level agreements',
-        evaluate:   'a partner reviewing a contract markup. You highlight hidden liabilities, unfavorable indemnity clauses, and compliance risks, warning of the business consequences',
+        generate:   'a corporate technology counsel drafting a custom agreement. You write precise, enforceable terms covering liability, intellectual property, confidentiality, and mutual obligations that protect your client\'s interests',
+        evaluate:   'a corporate technology counsel reviewing an agreement before signing. You highlight hidden liabilities, unfavorable clauses, intellectual property risks, and compliance exposures, warning the client of the business and legal consequences',
         explain:    'a legal counsel explaining contract terms to a non-legal team. You translate complex legalese into clear, actionable business guidelines while retaining absolute precision',
-        decide:     'a lead counsel advising a client on whether to settle a dispute or go to trial. You analyze precedents, legal costs, success probabilities, and reputational risk to recommend the best path',
+        decide:     'a lead counsel advising a client on whether to sign an agreement, negotiate terms, or walk away. You analyze risks, liabilities, and trade-offs to recommend the pragmatically superior choice',
         transform:  'a contracts lawyer redrafting an agreement for clarity, precision, and enforceability. You remove archaic legalese, clarify definitions, and simplify structure without losing legal meaning',
       },
       medical: {
@@ -853,6 +854,91 @@
     resultText = resultText.replace(/__CODE_BLOCK_(\d+)__/g, (_, i) => codeBlocks[parseInt(i)]);
 
     return resultText;
+  }
+
+  function applyBetterPromptingRules(text, persona, domain) {
+    let result = text;
+    let personaInjected = false;
+
+    // 1. Explain it to me -> Act as [persona]
+    if (/explain it to me/i.test(result)) {
+      result = result.replace(/explain it to me/gi, `Act as ${persona}`);
+      personaInjected = true;
+    }
+
+    // 2. What is it? -> Give me non-obvious angles.
+    result = result.replace(/\bwhat is it\??/gi, 'Give me non-obvious angles.');
+
+    // 3. Give me information about... -> Analyze this through psychology, strategy, and positioning.
+    if (/give me information about\s+([^.!?\n]+)/i.test(result)) {
+      result = result.replace(/give me information about\s+([^.!?\n]+)/gi, 'Analyze $1 through psychology, strategy, and positioning.');
+    } else {
+      result = result.replace(/give me information about\s*/gi, 'Analyze this through psychology, strategy, and positioning.');
+    }
+
+    // 4. I need content ideas -> Give me 5 Reel ideas with the hook and format.
+    if (/i need content ideas/i.test(result)) {
+      result = result.replace(/i need content ideas/gi, 'Give me 5 Reel ideas with the hook and format.');
+    }
+    // 5. Content ideas -> Write it for someone who already knows the basics.
+    else if (/content ideas/i.test(result)) {
+      result = result.replace(/content ideas/gi, 'Write it for someone who already knows the basics.');
+    }
+
+    // 6. Make me a summary -> I want a non-generic answer.
+    result = result.replace(/(?:make|give) me a summary\.?/gi, 'I want a non-generic answer.');
+
+    // 7. Examples -> Improve this without softening it.
+    if (/examples of\s+([^.!?\n]+)/i.test(result)) {
+      result = result.replace(/examples of\s+([^.!?\n]+)/gi, 'Improve $1 without softening it.');
+    } else if (/\bexamples\b/i.test(result)) {
+      result = result.replace(/\bexamples\b/gi, 'Improve this without softening it.');
+    }
+
+    // 8. Benefits of... -> Give me the version nobody dares to say about [X].
+    if (/benefits of\s+([^.!?\n]+)/i.test(result)) {
+      result = result.replace(/benefits of\s+([^.!?\n]+)/gi, 'Give me the version nobody dares to say about $1.');
+    }
+
+    // 9. Strategies for... -> Break this concept down.
+    if (/strategies for\s+([^.!?\n]+)/i.test(result)) {
+      result = result.replace(/strategies for\s+([^.!?\n]+)/gi, 'Break $1 down.');
+    }
+
+    // 10. Tips for... -> Challenge this idea.
+    if (/tips for\s+([^.!?\n]+)/i.test(result)) {
+      result = result.replace(/tips for\s+([^.!?\n]+)/gi, 'Challenge $1.');
+    }
+
+    // 11. Make it more professional -> Make sure my client understands it in 5 seconds.
+    result = result.replace(/(?:make it\s+)?more professional/gi, 'Make sure my client understands it in 5 seconds.');
+
+    // 12. Improve it -> Improve it using 3 criteria: clarity, pacing, and CTA.
+    result = result.replace(/improve it\.?/gi, 'Improve it using 3 criteria: clarity, pacing, and CTA.');
+
+    // 13. Make it shorter -> Summarize it in 3 sentences without losing the main point.
+    result = result.replace(/make it shorter\.?/gi, 'Summarize it in 3 sentences without losing the main point.');
+
+    // 14. Make it sound natural -> Write it the way I speak, without jargon.
+    result = result.replace(/make it sound natural\.?/gi, 'Write it the way I speak, without jargon.');
+
+    // 15. Write a post about... -> Write a post for [client] with a hook in line 1.
+    if (/write a post about\s+([^.!?\n]+)/i.test(result)) {
+      result = result.replace(/write a post about\s+([^.!?\n]+)/gi, 'Write a post for [client] about $1 with a hook in line 1.');
+    }
+
+    // 16. Fix this -> Fix spelling and rhythm without changing my style.
+    if (domain !== 'code' && domain !== 'database' && domain !== 'data_science') {
+      result = result.replace(/\bfix this\.?/gi, 'Fix spelling and rhythm without changing my style.');
+    }
+
+    // 17. Make it more persuasive -> Make it more persuasive using this real objection: [X].
+    result = result.replace(/make it more persuasive/gi, 'Make it more persuasive using this real objection: [X].');
+
+    // 18. Write me a caption -> Give me 3 versions and tell me which one you recommend.
+    result = result.replace(/write me a caption/gi, 'Give me 3 versions and tell me which one you recommend.');
+
+    return { text: result, personaInjected };
   }
 
   function isCodeLine(line, prevIsCode, nextIsCode) {
@@ -1152,14 +1238,19 @@
       // --- MODE 2: MAX EFFICIENCY ---
       if (mode === 'maximize') {
         const persona = inferPersona(result);
+        const domain = detectDomain(result);
         const format = detectFormat(result);
         const constraints = extractConstraints(result);
+
+        const rewriteObj = applyBetterPromptingRules(result, persona, domain);
+        result = rewriteObj.text;
+        const personaInjected = rewriteObj.personaInjected;
         
         let prefix = '';
         let suffix = '';
 
         // Persona (if not already role-prompted in text and if Set Persona is true implicitly or subOptions isn't strictly false)
-        const hasExistingPersona = result.match(/you are (an|a)?\s*(expert|professional|specialist|assistant)/i);
+        const hasExistingPersona = personaInjected || result.match(/you are (an|a)?\s*(expert|professional|specialist|assistant)/i);
         if (!hasExistingPersona && (!subOptions || subOptions.persona !== false)) {
           prefix += `You are ${persona}.\n\n`;
         }
