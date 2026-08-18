@@ -149,7 +149,46 @@
     return 'generate';
   }
 
-  function detectDomain(text) {
+  const INTENT_TYPE_PATTERNS = [
+    { type: 'learn_concept',   pattern: /^\s*(teach me|explain|help me understand|walk me through|give me an overview of|what is|what's)\b/i },
+    { type: 'review_critique', pattern: /\b(review|check|look over|critique|give feedback on|feedback on|rate|assess|proofread|grade)\s+(my|this|the|a)\b/i },
+    { type: 'debug_fix',       pattern: /\b(fix|debug|why (is|isn't|doesn't|won't)|what's wrong with|troubleshoot)\b/i },
+    { type: 'decide_choose',   pattern: /\b(should i|which (is|one)|help me (decide|choose)|pros and cons|is this\s+[^.?!]{0,30}\s+(sound|good|correct|right)|.+\b(vs|versus)\b.+)/i },
+    { type: 'generate_create', pattern: /^\s*(write|create|generate|draft|build me|make me)\b/i },
+    { type: 'plan_architect',  pattern: /\b(design|architect|plan out|how should i structure|help me plan)\b/i },
+  ];
+
+  function detectIntentType(text) {
+    const matches = INTENT_TYPE_PATTERNS.filter(p => p.pattern.test(text));
+    if (matches.length === 0) return { type: 'default', confidence: 0 };
+    if (matches.length === 1) return { type: matches[0].type, confidence: 1 };
+    // Multiple intents matched — ambiguous, lower confidence, prefer the first (most specific ordering)
+    return { type: matches[0].type, confidence: 0.5 };
+  }
+
+  const AMBIGUOUS_TERMS = {
+    resume: {
+      positive: /\b(review|check|feedback on|improve|rate|proofread|look over|critique|land (a|the) (job|interview))\b.{0,40}\b(my|this|the|a)?\s*(resume|cv)\b|\b(resume|cv)\b.{0,40}\b(review|feedback|improve|strong|weak)\b/i,
+      negative:  /\bresume\s+(the|this|our|from|where we|task|conversation|project|download|job|script|process|training|upload)\b/i
+    },
+    design: {
+      positive: /\b(review|critique|feedback on|improve|rate)\b.{0,30}\b(design|mockup|layout|ui|poster|banner)\b/i,
+      negative: /\bdesigned to\b|\bby design\b|\bsystem design\b|\bapi design\b|\bdatabase design\b/i
+    },
+    model: {
+      positive: /\b(train|evaluate|deploy|fine-?tune|dataset|regression|classification|accuracy)\b.{0,40}\bmodel\b/i,
+      negative: /\brole model\b|\bfashion model\b|\bbusiness model\b|\bmental model\b/i
+    }
+  };
+
+  function isTermUsedAs(text, term) {
+    const rule = AMBIGUOUS_TERMS[term];
+    if (!rule) return true; // no gate defined, allow as before
+    if (rule.negative.test(text)) return false;
+    return rule.positive.test(text);
+  }
+
+  function detectCategory(text) {
     const t = text.toLowerCase();
 
     const categories = [
@@ -158,7 +197,7 @@
         persona: 'a principal database engineer responsible for mission-critical systems processing billions of records. You identify schema weaknesses, indexing issues, scaling bottlenecks, transaction risks, query inefficiencies, and future maintenance concerns',
         keywords: [
           { pattern: /\b(postgresql|mysql|query optimization|normalization|sql tuning)\b/g, weight: 2.0 },
-          { pattern: /\b(database design|schema|index)\b/g, weight: 1.0 }
+          { pattern: /\b(database design|schema|index|indexing)\b/g, weight: 1.6 }
         ]
       },
       {
@@ -175,7 +214,8 @@
         persona: 'a staff engineer conducting architecture reviews for systems serving tens of millions of users. You evaluate scalability, fault tolerance, observability, cost efficiency, latency, reliability, and operational complexity',
         keywords: [
           { pattern: /\b(distributed systems|microservices|load balancing)\b/g, weight: 2.0 },
-          { pattern: /\b(system design|scalability|architecture review)\b/g, weight: 1.0 }
+          { pattern: /\b(system design|system deign|scalability|architecture review)\b/g, weight: 1.5 },
+          { pattern: /\barchitecture\b/g, weight: 1.5 }
         ]
       },
       {
@@ -207,7 +247,9 @@
         persona: 'a staff backend architect reviewing APIs before public release. You evaluate consistency, versioning strategy, security, scalability, developer experience, error handling, and long-term maintainability',
         keywords: [
           { pattern: /\b(rest api|graphql|openapi|swagger)\b/g, weight: 2.0 },
-          { pattern: /\b(endpoint|api design|webhook)\b/g, weight: 1.0 }
+          { pattern: /\b(endpoint|api design|webhook)\b/g, weight: 1.0 },
+          { pattern: /\bdesign\w*\s+[^.?!]{0,50}\bapi\b/gi, weight: 2.0 },
+          { pattern: /\bapi\s+[^.?!]{0,50}\bdesign\w*\b/gi, weight: 2.0 }
         ]
       },
       {
@@ -238,7 +280,8 @@
         id: 'mobile',
         persona: 'a principal mobile architect responsible for applications serving millions of active users. You evaluate performance, memory usage, battery efficiency, platform guidelines, scalability, crash resilience, offline behavior, and long-term maintainability. You aggressively identify production risks before launch',
         keywords: [
-          { pattern: /\b(flutter|react native|swift|kotlin|xcode)\b/g, weight: 2.0 },
+          { pattern: /\b(flutter|react native|swiftui|kotlin|xcode)\b/g, weight: 2.0 },
+          { pattern: /\bswift\b(?=[^.?!]{0,20}\b(ios|app|xcode|apple|mobile|programming|language)\b)/g, weight: 2.0 },
           { pattern: /\b(android|ios|mobile app|play store|app store)\b/g, weight: 1.0 }
         ]
       },
@@ -417,8 +460,8 @@
         id: 'medical',
         persona: 'a senior clinical consultant and physician responsible for patient safety in high-risk medical decisions. You evaluate symptoms, evidence quality, treatment risks, contraindications, differential diagnoses, and urgency indicators. You prioritize scientific accuracy, risk reduction, and patient wellbeing above all else',
         keywords: [
-          { pattern: /\b(medicine|symptom|disease|diagnosis|clinical|therapy|medication)\b/g, weight: 2.0 },
-          { pattern: /\b(health|medical|doctor|treatment)\b/g, weight: 1.0 }
+          { pattern: /\b(medicine|symptom|disease|diagnosis|clinical|therapy|medication|contraindication|contraindications|drug interaction|dosage|prescription)\b/g, weight: 2.0 },
+          { pattern: /\b(health|medical|doctor|treatment|patient)\b/g, weight: 1.0 }
         ]
       },
       {
@@ -443,7 +486,8 @@
         persona: 'a senior data scientist responsible for production analytics systems used to drive major business decisions. You evaluate data quality, statistical methodology, feature engineering quality, model selection rationale, evaluation metrics, bias risks, and production readiness. You ensure conclusions are reproducible, generalizable, and actionable',
         keywords: [
           { pattern: /\b(machine learning|ml|deep learning|tensorflow|pytorch)\b/g, weight: 2.0 },
-          { pattern: /\b(dataset|analytics|statistics)\b/g, weight: 1.0 }
+          { pattern: /\b(dataset|analytics|statistics)\b/g, weight: 1.0 },
+          { pattern: /\bmodel\b/g, weight: 2.0 }
         ]
       },
       {
@@ -494,9 +538,16 @@
         persona: 'a principal software architect conducting a production-readiness review before deployment to millions of users. You prioritize correctness, scalability, security, maintainability, performance, fault tolerance, database efficiency, and clean architecture. You identify weaknesses that would cause outages, technical debt, or operational failures',
         keywords: [
           { pattern: /\b(software engineer|software engineering|developer|programmer|software architect|web developer|frontend developer|backend developer|fullstack developer)\b/g, weight: 2.5 },
-          { pattern: /\b(python|javascript|typescript|java|c#|go|rust|kubernetes|docker)\b/g, weight: 2.0 },
-          { pattern: /\b(react|node|backend|frontend|api|database|sql|git|algorithm|coding)\b/g, weight: 1.0 },
-          { pattern: /\b(code|debug|refactor)\b/g, weight: 0.3 }
+          { pattern: /\b(python|javascript|typescript|java|c#|golang|kubernetes|docker)\b/g, weight: 2.0 },
+          { pattern: /\bgo\b(?=[^.?!]{0,20}\b(lang|language|program|function|compile|struct|package|goroutine|routine)\b)/g, weight: 2.0 },
+          { pattern: /\brust\b(?=[^.?!]{0,20}\b(lang|language|cargo|crate|compiler|ownership|borrow checker)\b)/g, weight: 2.0 },
+          { pattern: /\b(react|node|backend|frontend|api|database|sql|git|algorithm|coding)\b/g, weight: 1.5 },
+          { pattern: /\b(code|debug|refactor|bug|bugs)\b/g, weight: 1.5 },
+          { pattern: /\b(ffmpeg|bash|powershell|regex|html|css|json|yaml|xml)\b/g, weight: 1.5 },
+          { pattern: /\bwrite\s+a\s+script\b/i, weight: 1.5 },
+          { pattern: /\bscript\s+(that|to|for|can)\b/i, weight: 1.5 },
+          { pattern: /\b(app|program|website|software)\b[^.?!]{0,20}\b(crash|crashing|crashed|freeze|freezing|frozen|won't (open|load|start)|not working|glitch(y|ing)?)\b/g, weight: 1.8 },
+          { pattern: /\b(crash|crashing|crashed|freeze|freezing|frozen|glitch(y|ing)?)\b[^.?!]{0,20}\b(app|program|website|software)\b/g, weight: 1.8 }
         ]
       },
       {
@@ -533,7 +584,16 @@
       cat.keywords.forEach(kw => {
         const matches = t.match(kw.pattern);
         if (matches) {
-          score += matches.length * kw.weight;
+          let validMatchesCount = 0;
+          matches.forEach(m => {
+            if (AMBIGUOUS_TERMS[m]) {
+              if (!isTermUsedAs(text, m)) {
+                return;
+              }
+            }
+            validMatchesCount++;
+          });
+          score += validMatchesCount * kw.weight;
         }
       });
       if (score > maxScore) {
@@ -541,6 +601,17 @@
         bestCatId = cat.id;
       }
     });
+
+    const MIN_CONFIDENT_SCORE = 1.5;
+    if (maxScore < MIN_CONFIDENT_SCORE) {
+      bestCatId = 'default';
+    }
+
+    return bestCatId;
+  }
+
+  function detectDomain(text) {
+    const bestCatId = detectCategory(text);
 
     const CATEGORY_TO_DOMAIN_MAP = {
       database_architecture: 'database',
@@ -1039,6 +1110,63 @@
     return result;
   }
 
+  function extractTopic(text) {
+    const patterns = [
+      /(?:teach me|explain|help me understand|walk me through|give me an overview of)\s+(.+?)(?:\s+in a\b|\s+for\b|\s+please\b|[.!?]|$)/i,
+      /what\s+is\s+(.+?)(?:\?|$)/i,
+    ];
+    for (const p of patterns) {
+      const m = text.match(p);
+      if (m && m[1]) return m[1].trim();
+    }
+    return null;
+  }
+
+  // Per-domain flavor — extend this table over time. Unlisted domains
+  // fall through to the generic-but-still-structured branch.
+  const LEARN_FLAVOR = {
+    system_design: {
+      persona: 'a principal engineer with 20+ years of experience architecting enterprise applications at large technology companies',
+      contrastWith: ['interview prep', 'a small side project'],
+      examples: ['banking', 'healthcare', 'travel', 'e-commerce']
+    },
+    cybersecurity: {
+      persona: 'a principal security engineer who has run security programs at scale',
+      contrastWith: ['a certification exam', 'a CTF challenge'],
+      examples: ['financial services', 'healthcare', 'SaaS platforms']
+    },
+    database_architecture: {
+      persona: 'a principal database engineer responsible for systems processing billions of records',
+      contrastWith: ['a homework assignment', 'a single-developer side project'],
+      examples: ['e-commerce checkout systems', 'banking ledgers', 'logistics tracking']
+    }
+  };
+
+  function buildLearnConceptPrompt(topic, domainId) {
+    const flavor = LEARN_FLAVOR[domainId] || {};
+    const persona = flavor.persona || `a senior practitioner with deep, hands-on expertise in ${topic}`;
+    const contrast = flavor.contrastWith
+      ? ` — not in the context of ${flavor.contrastWith.join(', and not in the context of ')}`
+      : '';
+    const exampleLine = flavor.examples
+      ? `Be concrete and use real examples (${flavor.examples.join(', ')}). Do not give me a generic definition that would apply equally to a college project.`
+      : `Be concrete. Do not give me a generic definition — use real, specific examples, not abstractions.`;
+
+    return `You are ${persona}.
+
+Explain what "${topic}" means specifically${contrast}.
+
+Structure your answer as:
+1. A precise definition in 3 sentences or fewer.
+2. What is IN scope — list every distinct concern that genuinely belongs to ${topic}, and for each, one line on why it belongs.
+3. What is commonly MISTAKEN for ${topic} but is actually something else (name what it actually is instead).
+4. Where ${topic} begins and ends relative to the work that surrounds it.
+
+${exampleLine}
+
+End by naming the concerns from your list in (2) that beginners most often leave out entirely.`;
+  }
+
   const EskayOptimizer = {
     preserveCodeBlocksAndRawCode(text) {
       return preserveCodeBlocksAndRawCode(text);
@@ -1051,6 +1179,15 @@
     },
     detectDomain(text) {
       return detectDomain(text);
+    },
+    detectCategory(text) {
+      return detectCategory(text);
+    },
+    detectIntentType(text) {
+      return detectIntentType(text);
+    },
+    extractTopic(text) {
+      return extractTopic(text);
     },
     sanitize(text) {
       if (!text) return '';
@@ -1237,45 +1374,53 @@
 
       // --- MODE 2: MAX EFFICIENCY ---
       if (mode === 'maximize') {
-        const persona = inferPersona(result);
-        const domain = detectDomain(result);
-        const format = detectFormat(result);
-        const constraints = extractConstraints(result);
+        const intent = detectIntentType(result);
+        const category = detectCategory(result);
+        const topic = intent.type === 'learn_concept' ? extractTopic(result) : null;
 
-        const rewriteObj = applyBetterPromptingRules(result, persona, domain);
-        result = rewriteObj.text;
-        const personaInjected = rewriteObj.personaInjected;
-        
-        let prefix = '';
-        let suffix = '';
+        if (intent.type === 'learn_concept' && intent.confidence >= 1 && topic) {
+          result = buildLearnConceptPrompt(topic, category);
+        } else {
+          const persona = inferPersona(result);
+          const domain = detectDomain(result);
+          const format = detectFormat(result);
+          const constraints = extractConstraints(result);
 
-        // Persona (if not already role-prompted in text and if Set Persona is true implicitly or subOptions isn't strictly false)
-        const hasExistingPersona = personaInjected || result.match(/you are (an|a)?\s*(expert|professional|specialist|assistant)/i);
-        if (!hasExistingPersona && (!subOptions || subOptions.persona !== false)) {
-          prefix += `You are ${persona}.\n\n`;
+          const rewriteObj = applyBetterPromptingRules(result, persona, domain);
+          result = rewriteObj.text;
+          const personaInjected = rewriteObj.personaInjected;
+          
+          let prefix = '';
+          let suffix = '';
+
+          // Persona (if not already role-prompted in text and if Set Persona is true implicitly or subOptions isn't strictly false)
+          const hasExistingPersona = personaInjected || result.match(/you are (an|a)?\s*(expert|professional|specialist|assistant)/i);
+          if (!hasExistingPersona && (!subOptions || subOptions.persona !== false)) {
+            prefix += `You are ${persona}.\n\n`;
+          }
+
+          // Wrap prompt inside Task framing
+          let coreTask = result.trim();
+          coreTask = coreTask.replace(/^(could you please|please|can you|would you mind|kindly)\s+/i, '');
+          
+          result = `${prefix}${coreTask}`;
+
+          // Constraints
+          if (constraints.length > 0) {
+            suffix += `\n\nConstraints:\n` + constraints.map(c => `- ${c}`).join('\n');
+          }
+
+          // Format specification
+          if (!subOptions || subOptions.format !== false) {
+            suffix += `\n\nFormat: ${format}`;
+          }
+
+          // Chain-of-thought trigger
+          const isComplex = result.match(/\b(why|how|compare|decide|analyze|reason|complex|architect|explain)\b/i);
+          if (isComplex && (!subOptions || subOptions.step !== false)) { suffix += `\nThink step by step before answering.`; }
+          if (persona.includes('software architect') || persona.includes('software engineer') || persona.includes('developer') || persona.includes('backend') || persona.includes('fullstack')) { suffix += `\nShow one minimal working example.`; }
+          result = result + suffix;
         }
-
-        // Wrap prompt inside Task framing
-        let coreTask = result.trim();
-        coreTask = coreTask.replace(/^(could you please|please|can you|would you mind|kindly)\s+/i, '');
-        
-        result = `${prefix}${coreTask}`;
-
-        // Constraints
-        if (constraints.length > 0) {
-          suffix += `\n\nConstraints:\n` + constraints.map(c => `- ${c}`).join('\n');
-        }
-
-        // Format specification
-        if (!subOptions || subOptions.format !== false) {
-          suffix += `\n\nFormat: ${format}`;
-        }
-
-        // Chain-of-thought trigger
-        const isComplex = result.match(/\b(why|how|compare|decide|analyze|reason|complex|architect|explain)\b/i);
-        if (isComplex && (!subOptions || subOptions.step !== false)) { suffix += `\nThink step by step before answering.`; }
-        if (persona.includes('software architect') || persona.includes('software engineer') || persona.includes('developer') || persona.includes('backend') || persona.includes('fullstack')) { suffix += `\nShow one minimal working example.`; }
-        result = result + suffix;
       }
 
       // --- LAYER ON SUB-OPTIONS (CHECKBOXES) ---
