@@ -167,6 +167,46 @@
   transform: translateY(0);
 }
 
+.ek-btn-recall {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #10B981 !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease;
+}
+
+.ek-btn-recall:hover {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+.ek-btn-recall:active {
+  transform: translateY(0);
+}
+
+.ek-btn-clean {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #EF4444 !important;
+  font-weight: 500 !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease;
+}
+
+.ek-btn-clean:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+.ek-btn-clean:active {
+  transform: translateY(0);
+}
+
 /* Action Buttons Group */
 .ek-actions-row {
   display: flex;

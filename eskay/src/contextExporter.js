@@ -154,6 +154,36 @@
     return matches;
   }
 
+  let embedPipeline = null;
+  let pipelineLoading = null;
+
+  async function getEmbedding(text) {
+    if (embedPipeline) {
+      const output = await embedPipeline(text, { pooling: 'mean', normalize: true });
+      return Array.from(output.data);
+    }
+
+    if (pipelineLoading) {
+      await pipelineLoading;
+      const output = await embedPipeline(text, { pooling: 'mean', normalize: true });
+      return Array.from(output.data);
+    }
+
+    pipelineLoading = (async () => {
+      if (!window.transformers) {
+        throw new Error("Transformers.js library not loaded in page context");
+      }
+      window.transformers.env.allowLocalModels = false;
+      embedPipeline = await window.transformers.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    })();
+
+    await pipelineLoading;
+    pipelineLoading = null;
+    
+    const output = await embedPipeline(text, { pooling: 'mean', normalize: true });
+    return Array.from(output.data);
+  }
+
   const EskayExporter = {
     setActiveConversationData(data) {
       activeConversationData = data;
@@ -163,8 +193,9 @@
       return activeConversationData;
     },
 
-    exportContext() {
+    async exportContext() {
       const match = window.location.pathname.match(/\/chat\/([^/?]+)/);
+      const sessionId = match ? match[1] : 'unknown-session';
       if (!match) {
         if (window.EskayUI) {
           window.EskayUI.showToast("No active conversation found to retrieve context from.");
@@ -195,6 +226,10 @@
           window.EskayUI.showToast("No chat messages found to extract context.");
         }
         return;
+      }
+
+      if (window.EskayUI) {
+        window.EskayUI.showToast("Initializing AI memory model (~23MB)... Please wait.");
       }
 
       // Calculate approximate tokens of the whole conversation
@@ -368,26 +403,6 @@
         handoffNextSteps.push("Clarify any remaining requirements with the assistant.");
       }
 
-      // Extract Code Blocks Verbatim
-      let codeSection = "";
-      if (allCodeBlocks.length > 0) {
-        const uniqueCodes = [];
-        const seenCodes = new Set();
-        allCodeBlocks.forEach(cb => {
-          const hash = cb.code.trim().substring(0, 100);
-          if (!seenCodes.has(hash)) {
-            seenCodes.add(hash);
-            uniqueCodes.push(cb);
-          }
-        });
-        
-        uniqueCodes.slice(-4).forEach((cb, idx) => {
-          codeSection += `### Artifact ${idx + 1} (${cb.lang})\n\`\`\`${cb.lang}\n${cb.code.trim()}\n\`\`\`\n\n`;
-        });
-      } else {
-        codeSection = "*No code blocks generated in this session yet.*\n";
-      }
-
       const extraNextSteps = [];
       const nextKeywords = ["todo", "next", "remaining", "unresolved", "open questions", "need to", "should add"];
       let nextSentences = [];
@@ -402,6 +417,97 @@
         });
       }
 
+      // --- SEGMENT AND CHUNK INTO MEMORY RECORDS ---
+      const candidateRecords = [];
+      const seenTexts = new Set();
+
+      function addCandidate(type, text, sourceIndex) {
+        if (!text || typeof text !== 'string') return;
+        const cleanText = text.trim();
+        if (cleanText.length < 5) return;
+        if (seenTexts.has(cleanText)) return;
+        seenTexts.add(cleanText);
+
+        const cleanType = type.replace(/[^a-zA-Z]/g, '');
+        const randomId = Math.random().toString(36).substring(2, 11);
+        const recordId = `${sessionId}-${cleanType}-${Date.now()}-${randomId}`;
+
+        candidateRecords.push({
+          id: recordId,
+          sessionId: sessionId,
+          timestamp: Date.now(),
+          type: type,
+          text: cleanText,
+          embedding: [],
+          sourceMessageIndex: sourceIndex !== undefined ? sourceIndex : 0
+        });
+      }
+
+      // 1. Add Goal
+      addCandidate('goal', primaryGoal, 0);
+
+      // 2. Add Decisions & Constraints
+      accomplishments.forEach(acc => {
+        const lower = acc.toLowerCase();
+        const isConstraint = lower.includes('must') || lower.includes('should') || lower.includes('limit') || lower.includes('constraint') || lower.includes('cannot') || lower.includes('do not');
+        addCandidate(isConstraint ? 'constraint' : 'decision', acc, 0);
+      });
+
+      decisions.forEach(dec => {
+        const lower = dec.toLowerCase();
+        const isConstraint = lower.includes('must') || lower.includes('should') || lower.includes('limit') || lower.includes('constraint') || lower.includes('cannot') || lower.includes('do not');
+        addCandidate(isConstraint ? 'constraint' : 'decision', dec, 0);
+      });
+
+      // 3. Add Snippets
+      allCodeBlocks.forEach(cb => {
+        const formattedSnippet = `Language: ${cb.lang}\n\`\`\`${cb.lang}\n${cb.code}\n\`\`\``;
+        addCandidate('snippet', formattedSnippet, 0);
+      });
+
+      // 4. Add Next Steps
+      handoffNextSteps.forEach(ns => {
+        addCandidate('nextStep', ns, 0);
+      });
+
+      // Compute embeddings and save candidate records to IndexedDB
+      if (window.EskayUI) {
+        window.EskayUI.showToast("🧠 Eskay: Extracting and indexing conversation memory...");
+      }
+
+      for (const record of candidateRecords) {
+        try {
+          record.embedding = await getEmbedding(record.text);
+          if (window.EskayVectorStore) {
+            await window.EskayVectorStore.saveRecord(record);
+          }
+        } catch (err) {
+          console.error("Eskay context embedding failed for record:", record, err);
+        }
+      }
+
+      // --- RENDER MD VIEW FROM SAVED RECORDS ---
+      const goals = candidateRecords.filter(r => r.type === 'goal').map(r => r.text);
+      const accomplished = candidateRecords.filter(r => r.type === 'decision').map(r => r.text);
+      const constraintsList = candidateRecords.filter(r => r.type === 'constraint').map(r => r.text);
+      const snippets = candidateRecords.filter(r => r.type === 'snippet').map(r => r.text);
+      const nexts = candidateRecords.filter(r => r.type === 'nextStep').map(r => r.text);
+
+      let codeSection = "";
+      if (snippets.length > 0) {
+        snippets.slice(-4).forEach((snippetText, idx) => {
+          codeSection += `### Artifact ${idx + 1}\n${snippetText}\n\n`;
+        });
+      } else {
+        codeSection = "*No code blocks generated in this session yet.*\n";
+      }
+
+      // --- APPEND FULL CHAT HISTORY (USER REQUEST) ---
+      let fullChatHistoryText = "";
+      messages.forEach((m, idx) => {
+        fullChatHistoryText += `### Message ${idx + 1} (${m.role})\n${m.text}\n\n`;
+      });
+
       const dateTime = new Date().toLocaleString();
 
       const markdownContent = `# MASTER_PROMPT.md — Context Handoff Document
@@ -409,27 +515,22 @@
 > Original chat had approximately ${tokenCount.toLocaleString()} tokens of context.
 
 ## 🎯 Primary Goal
-${primaryGoal}
+${goals.length > 0 ? goals.join('\n\n') : primaryGoal}
 
 ## ✅ What Was Accomplished
-${accomplishments.map(a => {
+${accomplished.length > 0 ? accomplished.map(a => {
   const spaces = a.match(/^(\s*)/)[0];
   return `${spaces}- ${a.slice(spaces.length)}`;
-}).join('\n')}
+}).join('\n') : accomplishments.map(a => `- ${a}`).join('\n')}
 
+${constraintsList.length > 0 ? `## ⚠️ Constraints & Guidelines\n${constraintsList.map(c => `- ${c}`).join('\n')}\n` : ''}
 ## 📋 Key Context & Decisions
-${decisions.map(d => {
-  const spaces = d.match(/^(\s*)/)[0];
-  return `${spaces}- ${d.slice(spaces.length)}`;
-}).join('\n')}
+${accomplished.length > 0 ? accomplished.map(d => `- ${d}`).join('\n') : decisions.map(d => `- ${d}`).join('\n')}
 
 ## 💻 Code / Artifacts
 ${codeSection}
 ## ❓ Unresolved / Next Steps
-${handoffNextSteps.map(n => {
-  const spaces = n.match(/^(\s*)/)[0];
-  return `${spaces}- ${n.slice(spaces.length)}`;
-}).join('\n')}
+${nexts.length > 0 ? nexts.map(n => `- ${n}`).join('\n') : handoffNextSteps.map(n => `- ${n}`).join('\n')}
 
 ## 📎 How to Continue This Work
 Attach this file to your new chat and begin with:
@@ -437,6 +538,9 @@ Attach this file to your new chat and begin with:
 > "I'm continuing work from a previous session. The context document is attached.
 > Please read it fully, confirm you understand the goal and current state, then
 > ask me any clarifying questions before we proceed."
+
+## 💬 Full Chat History
+${fullChatHistoryText}
 
 ---
 *Generated by Eskay — https://github.com/skpra/Eskay*

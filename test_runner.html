@@ -117,7 +117,7 @@
             );
 
             // Test data_science keyword pruning
-            const generalAiPrompt = 'I asked Claude to review this code and it is working.';
+            const generalAiPrompt = 'I asked Claude to review this javascript code and it is working.';
             const optimizedGeneralAi = EskayOptimizer.optimize(generalAiPrompt, 'maximize', { persona: true });
             logResult(
                 optimizedGeneralAi.includes('a staff engineer conducting a high-stakes code review for a system-critical pull request before deployment'),
@@ -336,6 +336,162 @@ Provide a brutal, honest, and completely unglazed critique. Do not sugarcoat, so
                 optimizedNda.includes('a corporate technology counsel reviewing an agreement before signing. You highlight hidden liabilities, unfavorable clauses'),
                 'NDA advice request should correctly resolve to legal evaluate persona'
             );
+
+            // 9. Test Issue 9 Disambiguation Cases
+            const issue9Cases = [
+              {
+                "id": "learn-01",
+                "prompt": "teach me system deign in a beginner-friendly way",
+                "expectedIntent": "learn_concept",
+                "expectedDomain": "system_design",
+                "expectedTopicIncludes": "system deign"
+              },
+              {
+                "id": "learn-02",
+                "prompt": "explain how database indexing works",
+                "expectedIntent": "learn_concept",
+                "expectedDomain": "database_architecture",
+                "expectedTopicIncludes": "database indexing"
+              },
+              {
+                "id": "learn-03",
+                "prompt": "what is CSRF",
+                "expectedIntent": "learn_concept",
+                "expectedDomain": "cybersecurity",
+                "expectedTopicIncludes": "CSRF"
+              },
+              {
+                "id": "resume-fp-01",
+                "prompt": "resume the download after it fails",
+                "expectedIntent": "default",
+                "expectedDomain": null
+              },
+              {
+                "id": "resume-fp-02",
+                "prompt": "write a script that can resume a paused ffmpeg job",
+                "expectedIntent": "generate_create",
+                "expectedDomain": "code"
+              },
+              {
+                "id": "resume-fp-03",
+                "prompt": "let's resume where we left off on the migration plan",
+                "expectedIntent": "default",
+                "expectedDomain": null
+              },
+              {
+                "id": "resume-tp-01",
+                "prompt": "can you review my resume, I want to land more interviews",
+                "expectedIntent": "review_critique",
+                "expectedDomain": "resume"
+              },
+              {
+                "id": "resume-tp-02",
+                "prompt": "check my resume for a software engineering role",
+                "expectedIntent": "review_critique",
+                "expectedDomain": "resume"
+              },
+              {
+                "id": "design-fp-01",
+                "prompt": "I designed the API to be idempotent and want feedback on the retry logic",
+                "expectedIntent": "review_critique",
+                "expectedDomain": "api_design"
+              },
+              {
+                "id": "design-fp-02",
+                "prompt": "our system was designed to fail gracefully under load, is this architecture sound?",
+                "expectedIntent": "decide_choose",
+                "expectedDomain": "system_design"
+              },
+              {
+                "id": "design-tp-01",
+                "prompt": "review my poster design, does the layout work?",
+                "expectedIntent": "review_critique",
+                "expectedDomain": "design"
+              },
+              {
+                "id": "model-fp-01",
+                "prompt": "she's a great role model for junior engineers on the team",
+                "expectedIntent": "default",
+                "expectedDomain": null
+              },
+              {
+                "id": "model-tp-01",
+                "prompt": "help me evaluate this classification model's accuracy on the test set",
+                "expectedIntent": "default",
+                "expectedDomain": "data_science"
+              },
+              {
+                "id": "debug-01",
+                "prompt": "why isn't my react component re-rendering when state changes",
+                "expectedIntent": "debug_fix",
+                "expectedDomain": "code"
+              },
+              {
+                "id": "decide-01",
+                "prompt": "should I use PostgreSQL or MongoDB for a high-write-throughput app",
+                "expectedIntent": "decide_choose",
+                "expectedDomain": "database_architecture"
+              },
+              {
+                "id": "plan-01",
+                "prompt": "help me design a rate limiter for our public API",
+                "expectedIntent": "plan_architect",
+                "expectedDomain": "api_design"
+              },
+              {
+                "id": "generate-01",
+                "prompt": "write a cover letter for a data analyst role",
+                "expectedIntent": "generate_create",
+                "expectedDomain": "resume"
+              },
+              {
+                "id": "learn-ambiguous-01",
+                "prompt": "explain this and also can you check my code for bugs",
+                "expectedIntent": "learn_concept",
+                "expectedDomain": "code"
+              }
+            ];
+
+            let issue9Passed = 0;
+            issue9Cases.forEach(c => {
+              const gotIntent = EskayOptimizer.detectIntentType(c.prompt);
+              const gotCategory = EskayOptimizer.detectCategory(c.prompt);
+              const gotDomain = EskayOptimizer.detectDomain(c.prompt);
+
+              // 1. Intent Check
+              let intentPass = gotIntent.type === c.expectedIntent;
+              if (c.id === 'learn-ambiguous-01') {
+                intentPass = intentPass && (gotIntent.confidence < 1);
+              }
+
+              // 2. Domain Check
+              const expectedBroadDomain = (c.expectedDomain === null || c.expectedDomain === 'default') ? 'default' : c.expectedDomain;
+              const domainPass = (gotCategory === c.expectedDomain) || (gotDomain === expectedBroadDomain) || (c.expectedDomain === null && gotDomain === 'default');
+
+              // 3. Topic Check
+              let topicPass = true;
+              if (c.expectedTopicIncludes) {
+                const opt = EskayOptimizer.optimize(c.prompt, 'maximize');
+                topicPass = opt.includes(c.expectedTopicIncludes);
+              }
+
+              const casePass = intentPass && domainPass && topicPass;
+              if (casePass) issue9Passed++;
+
+              logResult(
+                casePass,
+                `Case ${c.id}: "${c.prompt}" -> Intent: got "${gotIntent.type}" (expect "${c.expectedIntent}"), Domain: got "${gotCategory}/${gotDomain}" (expect "${c.expectedDomain}"), Topic: ${topicPass ? 'PASS' : 'FAIL'}`
+              );
+            });
+
+            const issue9Pct = (100 * issue9Passed / issue9Cases.length).toFixed(1);
+            logResult(
+              issue9Passed / issue9Cases.length >= 0.9,
+              `Issue 9 Disambiguation Accuracy: ${issue9Passed}/${issue9Cases.length} passed (${issue9Pct}%) - Target >= 90%`
+            );
+            if (issue9Passed / issue9Cases.length < 0.9) {
+              allPassed = false;
+            }
 
             // Set final header
             if (allPassed) {

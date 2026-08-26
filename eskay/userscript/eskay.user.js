@@ -6,6 +6,7 @@
 // @author       Pranav
 // @match        https://claude.ai/*
 // @require      https://unpkg.com/gpt-tokenizer/dist/o200k_base.js
+// @require      https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
@@ -158,6 +159,40 @@
       transform: translateY(-1px);
     }
     .ek-btn-retrieve:active {
+      transform: translateY(0);
+    }
+    .ek-btn-recall {
+      background-color: rgba(16, 185, 129, 0.1) !important;
+      border: 1px solid rgba(16, 185, 129, 0.3) !important;
+      color: #10B981 !important;
+      font-weight: 500 !important;
+      transition: all 0.2s ease;
+    }
+    .ek-btn-recall:hover {
+      background-color: rgba(16, 185, 129, 0.2) !important;
+      border-color: rgba(16, 185, 129, 0.5) !important;
+      transform: translateY(-1px);
+    }
+    .ek-btn-recall:active {
+      transform: translateY(0);
+    }
+    .ek-btn-clean {
+      background-color: rgba(239, 68, 68, 0.1) !important;
+      border: 1px solid rgba(239, 68, 68, 0.3) !important;
+      color: #EF4444 !important;
+      font-weight: 500 !important;
+      padding: 4px 10px !important;
+      font-size: 11px !important;
+      border-radius: 12px !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease;
+    }
+    .ek-btn-clean:hover {
+      background-color: rgba(239, 68, 68, 0.2) !important;
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      transform: translateY(-1px);
+    }
+    .ek-btn-clean:active {
       transform: translateY(0);
     }
     .ek-actions-row {
@@ -2085,6 +2120,184 @@ End by naming the concerns from your list in (2) that beginners most often leave
     }
   };
 
+  // --- 4.1 Memory Schema ---
+  const MemoryRecordSchema = {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      sessionId: { type: 'string' },
+      timestamp: { type: 'number' },
+      type: { type: 'string', enum: ['goal', 'decision', 'constraint', 'snippet', 'nextStep'] },
+      text: { type: 'string' },
+      embedding: { type: 'array', items: { type: 'number' } },
+      sourceMessageIndex: { type: 'number' }
+    },
+    required: ['id', 'sessionId', 'timestamp', 'type', 'text', 'embedding', 'sourceMessageIndex']
+  };
+
+  function validateMemoryRecord(record) {
+    if (!record || typeof record !== 'object') return false;
+    if (typeof record.id !== 'string') return false;
+    if (typeof record.sessionId !== 'string') return false;
+    if (typeof record.timestamp !== 'number') return false;
+    if (!['goal', 'decision', 'constraint', 'snippet', 'nextStep'].includes(record.type)) return false;
+    if (typeof record.text !== 'string') return false;
+    if (!Array.isArray(record.embedding) || !record.embedding.every(n => typeof n === 'number')) return false;
+    if (typeof record.sourceMessageIndex !== 'number') return false;
+    return true;
+  }
+
+  const EskaySchema = {
+    schema: MemoryRecordSchema,
+    validate: validateMemoryRecord
+  };
+  window.EskaySchema = EskaySchema;
+
+  // --- 4.2 Memory Vector Store ---
+  const DB_NAME = 'EskayMemoryDB';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'records';
+  let dbInstance = null;
+
+  function initDB() {
+    return new Promise((resolve, reject) => {
+      if (dbInstance) return resolve(dbInstance);
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onerror = (e) => reject(e.target.error);
+      request.onsuccess = (e) => {
+        dbInstance = e.target.result;
+        resolve(dbInstance);
+      };
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          store.createIndex('sessionId', 'sessionId', { unique: false });
+          store.createIndex('type', 'type', { unique: false });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+      };
+    });
+  }
+
+  function getStore(mode) {
+    return initDB().then(db => {
+      const transaction = db.transaction([STORE_NAME], mode);
+      return transaction.objectStore(STORE_NAME);
+    });
+  }
+
+  const EskayVectorStore = {
+    initDB,
+    saveRecord(record) {
+      return new Promise((resolve, reject) => {
+        if (!EskaySchema.validate(record)) return reject(new Error('Invalid MemoryRecord schema'));
+        getStore('readwrite').then(store => {
+          const request = store.put(record);
+          request.onsuccess = () => resolve(record.id);
+          request.onerror = (e) => reject(e.target.error);
+        }).catch(reject);
+      });
+    },
+    getAllRecords() {
+      return new Promise((resolve, reject) => {
+        getStore('readonly').then(store => {
+          const request = store.getAll();
+          request.onsuccess = () => resolve(request.result || []);
+          request.onerror = (e) => reject(e.target.error);
+        }).catch(reject);
+      });
+    },
+    getRecordsBySession(sessionId) {
+      return new Promise((resolve, reject) => {
+        getStore('readonly').then(store => {
+          const index = store.index('sessionId');
+          const request = index.getAll(IDBKeyRange.only(sessionId));
+          request.onsuccess = () => resolve(request.result || []);
+          request.onerror = (e) => reject(e.target.error);
+        }).catch(reject);
+      });
+    },
+    deleteRecord(id) {
+      return new Promise((resolve, reject) => {
+        getStore('readwrite').then(store => {
+          const request = store.delete(id);
+          request.onsuccess = () => resolve();
+          request.onerror = (e) => reject(e.target.error);
+        }).catch(reject);
+      });
+    },
+    cosineSimilarity(vecA, vecB) {
+      if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
+      let dotProduct = 0;
+      let normA = 0;
+      let normB = 0;
+      for (let i = 0; i < vecA.length; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+      }
+      if (normA === 0 || normB === 0) return 0;
+      return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    },
+    search(queryEmbedding, limit = 5, options = {}) {
+      const sessionId = options.sessionId || null;
+      const typeFilter = options.type || null;
+      const fetchPromise = sessionId ? this.getRecordsBySession(sessionId) : this.getAllRecords();
+      return fetchPromise.then(records => {
+        let filtered = records;
+        if (typeFilter) filtered = records.filter(r => r.type === typeFilter);
+        const scored = filtered.map(record => {
+          const score = this.cosineSimilarity(queryEmbedding, record.embedding);
+          return { record, similarity: score };
+        });
+        const sorted = scored
+          .filter(item => item.similarity > 0.1)
+          .sort((a, b) => b.similarity - a.similarity);
+        return sorted.slice(0, limit).map(item => ({ ...item.record, similarity: item.similarity }));
+      });
+    }
+  };
+  window.EskayVectorStore = EskayVectorStore;
+
+  // --- 4.3 Memory Consolidator ---
+  const EskayConsolidator = {
+    async consolidate() {
+      const records = await EskayVectorStore.getAllRecords();
+      if (records.length <= 1) return 0;
+      const toDelete = new Set();
+      for (let i = 0; i < records.length; i++) {
+        const recA = records[i];
+        if (toDelete.has(recA.id)) continue;
+        for (let j = i + 1; j < records.length; j++) {
+          const recB = records[j];
+          if (toDelete.has(recB.id)) continue;
+          if (recA.type !== recB.type) continue;
+          const score = EskayVectorStore.cosineSimilarity(recA.embedding, recB.embedding);
+          if (score > 0.85) {
+            if (recA.timestamp >= recB.timestamp) {
+              toDelete.add(recB.id);
+            } else {
+              toDelete.add(recA.id);
+              break;
+            }
+          }
+        }
+      }
+      let pruneCount = 0;
+      for (const id of toDelete) {
+        try {
+          await EskayVectorStore.deleteRecord(id);
+          pruneCount++;
+        } catch (err) {
+          console.error("Eskay: failed to delete consolidated record:", id, err);
+        }
+      }
+      return pruneCount;
+    }
+  };
+  window.EskayConsolidator = EskayConsolidator;
+
   // --- 5. Context Exporter ---
   let activeConversationData = null;
 
@@ -2191,8 +2404,9 @@ End by naming the concerns from your list in (2) that beginners most often leave
   const EskayExporter = {
     setActiveConversationData(data) { activeConversationData = data; },
     getActiveConversationData() { return activeConversationData; },
-    exportContext() {
+    async exportContext() {
       const match = window.location.pathname.match(/\/chat\/([^/?]+)/);
+      const sessionId = match ? match[1] : 'unknown-session';
       if (!match) {
         EskayUI.showToast("No active conversation found to retrieve context from.");
         return;
@@ -2212,9 +2426,11 @@ End by naming the concerns from your list in (2) that beginners most often leave
         return;
       }
 
+      EskayUI.showToast("Initializing AI memory model (~23MB)... Please wait.");
+
       let fullConversationText = '';
       messages.forEach(m => { fullConversationText += `${m.role}: ${m.text}\n\n`; });
-      const tokenCount = countTokens(fullConversationText);
+      const tokenCount = typeof countTokens === 'function' ? countTokens(fullConversationText) : Math.ceil(fullConversationText.length / 4);
 
       const userMessages = messages.filter(m => m.role === 'User');
       let primaryGoal = "Develop and build the project as discussed in the conversation.";
@@ -2258,11 +2474,9 @@ End by naming the concerns from your list in (2) that beginners most often leave
           const isBullet = /^[*\-\+•]/.test(trimmed) || /^\d+[\.\)]/.test(trimmed) || /^[✅🔄❌⚠️🚀]/.test(trimmed);
           if (!isBullet) return;
 
-          // Extract leading spaces from the original line
           const indentMatch = line.match(/^(\s*)/);
           const indent = indentMatch ? indentMatch[1] : '';
 
-          // Strip leading bullet punctuation but preserve bold tags and content
           const cleanLine = trimmed.replace(/^([*\-\+•]|\d+[\.\)])\s+(\*\*)?/, '$2').trim();
           if (cleanLine.length < 10) return;
 
@@ -2330,21 +2544,6 @@ End by naming the concerns from your list in (2) that beginners most often leave
         handoffNextSteps.push("Clarify any remaining requirements with the assistant.");
       }
 
-      let codeSection = "";
-      if (allCodeBlocks.length > 0) {
-        const uniqueCodes = [];
-        const seenCodes = new Set();
-        allCodeBlocks.forEach(cb => {
-          const hash = cb.code.trim().substring(0, 100);
-          if (!seenCodes.has(hash)) { seenCodes.add(hash); uniqueCodes.push(cb); }
-        });
-        uniqueCodes.slice(-4).forEach((cb, idx) => {
-          codeSection += `### Artifact ${idx + 1} (${cb.lang})\n\`\`\`${cb.lang}\n${cb.code.trim()}\n\`\`\`\n\n`;
-        });
-      } else {
-        codeSection = "*No code blocks generated in this session yet.*\n";
-      }
-
       const extraNextSteps = [];
       const nextKeywords = ["todo", "next", "remaining", "unresolved", "open questions", "need to", "should add"];
       let nextSentences = [];
@@ -2359,33 +2558,126 @@ End by naming the concerns from your list in (2) that beginners most often leave
         });
       }
 
+      // --- SEGMENT AND CHUNK INTO MEMORY RECORDS ---
+      const candidateRecords = [];
+      const seenTexts = new Set();
+
+      function addCandidate(type, text, sourceIndex) {
+        if (!text || typeof text !== 'string') return;
+        const cleanText = text.trim();
+        if (cleanText.length < 5) return;
+        if (seenTexts.has(cleanText)) return;
+        seenTexts.add(cleanText);
+
+        const cleanType = type.replace(/[^a-zA-Z]/g, '');
+        const randomId = Math.random().toString(36).substring(2, 11);
+        const recordId = `${sessionId}-${cleanType}-${Date.now()}-${randomId}`;
+
+        candidateRecords.push({
+          id: recordId,
+          sessionId: sessionId,
+          timestamp: Date.now(),
+          type: type,
+          text: cleanText,
+          embedding: [],
+          sourceMessageIndex: sourceIndex !== undefined ? sourceIndex : 0
+        });
+      }
+
+      addCandidate('goal', primaryGoal, 0);
+
+      accomplishments.forEach(acc => {
+        const lower = acc.toLowerCase();
+        const isConstraint = lower.includes('must') || lower.includes('should') || lower.includes('limit') || lower.includes('constraint') || lower.includes('cannot') || lower.includes('do not');
+        addCandidate(isConstraint ? 'constraint' : 'decision', acc, 0);
+      });
+
+      decisions.forEach(dec => {
+        const lower = dec.toLowerCase();
+        const isConstraint = lower.includes('must') || lower.includes('should') || lower.includes('limit') || lower.includes('constraint') || lower.includes('cannot') || lower.includes('do not');
+        addCandidate(isConstraint ? 'constraint' : 'decision', dec, 0);
+      });
+
+      allCodeBlocks.forEach(cb => {
+        const formattedSnippet = `Language: ${cb.lang}\n\`\`\`${cb.lang}\n${cb.code}\n\`\`\``;
+        addCandidate('snippet', formattedSnippet, 0);
+      });
+
+      handoffNextSteps.forEach(ns => {
+        addCandidate('nextStep', ns, 0);
+      });
+
+      EskayUI.showToast("🧠 Eskay: Extracting and indexing conversation memory...");
+
+      // Compute embeddings using global transformers pipeline
+      let pipe = null;
+      try {
+        if (window.transformers) {
+          window.transformers.env.allowLocalModels = false;
+          pipe = await window.transformers.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        }
+      } catch (err) {
+        console.error("Eskay: failed to load embedding pipeline for export:", err);
+      }
+
+      for (const record of candidateRecords) {
+        try {
+          if (pipe) {
+            const output = await pipe(record.text, { pooling: 'mean', normalize: true });
+            record.embedding = Array.from(output.data);
+          } else {
+            record.embedding = new Array(384).fill(0);
+          }
+          await EskayVectorStore.saveRecord(record);
+        } catch (err) {
+          console.error("Eskay: failed to save memory record:", record, err);
+        }
+      }
+
+      // --- RENDER MD VIEW FROM SAVED RECORDS ---
+      const goals = candidateRecords.filter(r => r.type === 'goal').map(r => r.text);
+      const accomplished = candidateRecords.filter(r => r.type === 'decision').map(r => r.text);
+      const constraintsList = candidateRecords.filter(r => r.type === 'constraint').map(r => r.text);
+      const snippets = candidateRecords.filter(r => r.type === 'snippet').map(r => r.text);
+      const nexts = candidateRecords.filter(r => r.type === 'nextStep').map(r => r.text);
+
+      let codeSection = "";
+      if (snippets.length > 0) {
+        snippets.slice(-4).forEach((snippetText, idx) => {
+          codeSection += `### Artifact ${idx + 1}\n${snippetText}\n\n`;
+        });
+      } else {
+        codeSection = "*No code blocks generated in this session yet.*\n";
+      }
+
+      // --- APPEND FULL CHAT HISTORY (USER REQUEST) ---
+      let fullChatHistoryText = "";
+      messages.forEach((m, idx) => {
+        fullChatHistoryText += `### Message ${idx + 1} (${m.role})\n${m.text}\n\n`;
+      });
+
       const dateTime = new Date().toLocaleString();
       const markdownContent = `# MASTER_PROMPT.md — Context Handoff Document
 > Generated by Eskay on ${dateTime}
 > Original chat had approximately ${tokenCount.toLocaleString()} tokens of context.
 
 ## 🎯 Primary Goal
-${primaryGoal}
+${goals.length > 0 ? goals.join('\n\n') : primaryGoal}
 
 ## ✅ What Was Accomplished
-${accomplishments.map(a => {
+${accomplished.length > 0 ? accomplished.map(a => {
         const spaces = a.match(/^(\s*)/)[0];
         return `${spaces}- ${a.slice(spaces.length)}`;
-      }).join('\n')}
+      }).join('\n') : accomplishments.map(a => `- ${a}`).join('\n')}
 
+${constraintsList.length > 0 ? `## ⚠️ Constraints & Guidelines\n${constraintsList.map(c => `- ${c}`).join('\n')}\n` : ''}
 ## 📋 Key Context & Decisions
-${decisions.map(d => {
-        const spaces = d.match(/^(\s*)/)[0];
-        return `${spaces}- ${d.slice(spaces.length)}`;
-      }).join('\n')}
+${accomplished.length > 0 ? accomplished.map(d => `- ${d}`).join('\n') : decisions.map(d => `- ${d}`).join('\n')}
 
 ## 💻 Code / Artifacts
 ${codeSection}
 ## ❓ Unresolved / Next Steps
-${handoffNextSteps.map(n => {
-        const spaces = n.match(/^(\s*)/)[0];
-        return `${spaces}- ${n.slice(spaces.length)}`;
-      }).join('\n')}
+${nexts.length > 0 ? nexts.map(n => `- ${n}`).join('\n') : handoffNextSteps.map(n => `- ${n}`).join('\n')}
 
 ## 📎 How to Continue This Work
 Attach this file to your new chat and begin with:
@@ -2394,9 +2686,13 @@ Attach this file to your new chat and begin with:
 > Please read it fully, confirm you understand the goal and current state, then
 > ask me any clarifying questions before we proceed."
 
+## 💬 Full Chat History
+${fullChatHistoryText}
+
 ---
 *Generated by Eskay — https://github.com/skpra/Eskay*
 `;
+
       try {
         const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -2909,6 +3205,10 @@ Attach this file to your new chat and begin with:
           <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-multishot" ${optMultiShot}> 🔁 Multi-shot</label>
           <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-format" ${optFormat}> 📐 Specify format</label>
           <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context</label>
+          <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; border-top: 1px solid var(--cb-border); padding-top: 8px; font-size: 11px;">
+            <span style="color: var(--cb-text-muted);">Memory Management:</span>
+            <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and prune old memories">🧹 Clean Memory</button>
+          </div>
         </div>
         <div class="ek-actions-row">
           <div class="ek-buttons">
@@ -2920,7 +3220,10 @@ Attach this file to your new chat and begin with:
               <span class="ek-brutal-slider"></span>
             </label>
           </div>
-          <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" style="margin-left: auto;">⬇ Retrieve Context</button>
+          <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+            <button class="ek-btn ek-btn-recall" id="ek-btn-recall" title="Recall relevant memories for this prompt">🔍 Recall Memory</button>
+            <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" title="Index and export context">⬇ Retrieve Context</button>
+          </div>
           <div class="ek-delta" id="ek-delta-display">−0 tokens saved</div>
         </div>
         <div class="ek-dashboard">
@@ -3001,6 +3304,20 @@ Attach this file to your new chat and begin with:
       });
       document.getElementById('ek-btn-retrieve').addEventListener('click', () => { EskayExporter.exportContext(); });
 
+      const btnRecall = document.getElementById('ek-btn-recall');
+      if (btnRecall) {
+        btnRecall.addEventListener('click', () => {
+          this.handleMemoryRecall();
+        });
+      }
+
+      const btnClean = document.getElementById('ek-btn-clean');
+      if (btnClean) {
+        btnClean.addEventListener('click', () => {
+          this.handleMemoryClean();
+        });
+      }
+
       const dashboard = document.querySelector('.ek-dashboard');
       if (dashboard) {
         dashboard.addEventListener('click', () => {
@@ -3011,6 +3328,76 @@ Attach this file to your new chat and begin with:
         });
       }
     },
+    async handleMemoryRecall() {
+      const inputEl = document.querySelector('[contenteditable="true"], textarea');
+      if (!inputEl) return;
+
+      const currentText = (inputEl.innerText || inputEl.value || '').trim();
+      const queryText = currentText || "general project context and goals";
+      
+      EskayUI.showToast("Recalling relevant past memories...");
+
+      try {
+        const trans = window.transformers || (typeof transformers !== 'undefined' ? transformers : null);
+        if (!trans) {
+          throw new Error("AI pipeline not loaded yet");
+        }
+        
+        EskayUI.showToast("Initializing embedding model for search...");
+        
+        if (!window.eskayEmbeddingPipeline) {
+          trans.env.allowLocalModels = false;
+          window.eskayEmbeddingPipeline = await trans.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        }
+        
+        const output = await window.eskayEmbeddingPipeline(queryText, { pooling: 'mean', normalize: true });
+        const queryEmbedding = Array.from(output.data);
+        
+        if (window.EskayVectorStore) {
+          const results = await window.EskayVectorStore.search(queryEmbedding, 5);
+          
+          if (!results || results.length === 0) {
+            EskayUI.showToast("No relevant past memories found in the database.");
+            return;
+          }
+
+          let memoryBlock = "<eskay-memory>\n### Relevant Context from Past Sessions:\n";
+          results.forEach(res => {
+            const displayType = res.type.toUpperCase();
+            memoryBlock += `- **[${displayType}]**: ${res.text}\n`;
+          });
+          memoryBlock += "</eskay-memory>\n\n";
+
+          let cleanText = currentText;
+          const memoryRegex = /<eskay-memory>[\s\S]*?<\/eskay-memory>\n*/i;
+          if (memoryRegex.test(cleanText)) {
+            cleanText = cleanText.replace(memoryRegex, '');
+          }
+          
+          const newText = memoryBlock + cleanText;
+          setInputValue(inputEl, newText);
+          
+          EskayUI.showToast(`✓ Injected ${results.length} relevant memories!`);
+        }
+      } catch (err) {
+        console.error("Eskay memory recall failed:", err);
+        EskayUI.showToast("Memory recall failed: AI model loading error.");
+      }
+    },
+
+    async handleMemoryClean() {
+      EskayUI.showToast("Pruning and consolidating memory database...");
+      try {
+        if (window.EskayConsolidator) {
+          const count = await window.EskayConsolidator.consolidate();
+          EskayUI.showToast(`✓ Cleaned memory database! Pruned ${count} redundant records.`);
+        }
+      } catch (err) {
+        console.error("Eskay memory consolidation failed:", err);
+        EskayUI.showToast("Failed to consolidate memory database.");
+      }
+    },
+
     handleOptimize(mode) {
       const inputEl = document.querySelector('[contenteditable="true"], textarea');
       if (!inputEl) return;

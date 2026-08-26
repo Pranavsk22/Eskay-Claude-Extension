@@ -17,6 +17,10 @@
       "js": [
         "src/o200k_base.js",
         "src/tokenizer.js",
+        "src/transformers.js",
+        "memory/schema.js",
+        "memory/vectorStore.js",
+        "memory/consolidate.js",
         "src/optimizer.js",
         "src/contextExporter.js",
         "src/usageTracker.js",

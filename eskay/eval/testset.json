@@ -1,0 +1,167 @@
+[
+  {
+    "id": 1,
+    "sessionId": "session-auth",
+    "history": [
+      {"role": "User", "text": "We need to use Firebase Auth for user management and keep Google Sign-In as the only active provider."},
+      {"role": "Assistant", "text": "Understood. The auth strategy is Firebase Auth with Google Sign-In only."}
+    ],
+    "query": "How do users log in to our application?",
+    "expectedType": "decision",
+    "expectedFact": "Firebase Auth"
+  },
+  {
+    "id": 2,
+    "sessionId": "session-db",
+    "history": [
+      {"role": "User", "text": "Let's use PostgreSQL for our database and Prisma as our ORM."},
+      {"role": "Assistant", "text": "Decision noted: PostgreSQL with Prisma ORM will be used."}
+    ],
+    "query": "What database stack did we select?",
+    "expectedType": "decision",
+    "expectedFact": "PostgreSQL"
+  },
+  {
+    "id": 3,
+    "sessionId": "session-ui",
+    "history": [
+      {"role": "User", "text": "The theme must follow a strict dark mode palette, using HSL colors for layout consistency."},
+      {"role": "Assistant", "text": "Constraint registered: strict dark mode using HSL colors."}
+    ],
+    "query": "What are the rules for styling our dashboard UI?",
+    "expectedType": "constraint",
+    "expectedFact": "dark mode"
+  },
+  {
+    "id": 4,
+    "sessionId": "session-port",
+    "history": [
+      {"role": "User", "text": "Configure the Express backend server to run on port 8080 during local development."},
+      {"role": "Assistant", "text": "I will make sure Express starts on port 8080."}
+    ],
+    "query": "What port should the local backend listen on?",
+    "expectedType": "decision",
+    "expectedFact": "8080"
+  },
+  {
+    "id": 5,
+    "sessionId": "session-cache",
+    "history": [
+      {"role": "User", "text": "We will use Redis to store session caches and rate limit APIs to 100 requests per minute."},
+      {"role": "Assistant", "text": "Redis caching and a rate limit of 100 req/min implemented."}
+    ],
+    "query": "What is the caching mechanism and API limit?",
+    "expectedType": "decision",
+    "expectedFact": "Redis"
+  },
+  {
+    "id": 6,
+    "sessionId": "session-deploy",
+    "history": [
+      {"role": "User", "text": "Deploy the application to Vercel for the frontend and Render for the API backend server."},
+      {"role": "Assistant", "text": "Aligned: frontend on Vercel, backend on Render."}
+    ],
+    "query": "Where is the app hosted?",
+    "expectedType": "decision",
+    "expectedFact": "Vercel"
+  },
+  {
+    "id": 7,
+    "sessionId": "session-stripe",
+    "history": [
+      {"role": "User", "text": "We decided to set Stripe as our primary payment gateway, using its elements SDK for checkout."},
+      {"role": "Assistant", "text": "Perfect, we will integrate Stripe Elements for secure checkout."}
+    ],
+    "query": "Which payment processing SDK are we using?",
+    "expectedType": "decision",
+    "expectedFact": "Stripe"
+  },
+  {
+    "id": 8,
+    "sessionId": "session-version",
+    "history": [
+      {"role": "User", "text": "Make sure to lock node environment to version 18 LTS to avoid runtime mismatches on hosting servers."},
+      {"role": "Assistant", "text": "Locked Node runtime environment version to 18 LTS."}
+    ],
+    "query": "What version of Node.js are we targeting?",
+    "expectedType": "constraint",
+    "expectedFact": "18"
+  },
+  {
+    "id": 9,
+    "sessionId": "session-icons",
+    "history": [
+      {"role": "User", "text": "Use Lucide React for modern SVG icons instead of emojis across the entire UI codebase."},
+      {"role": "Assistant", "text": "Noted. Lucide React SVG icon set will be used instead of emojis."}
+    ],
+    "query": "What icons package should be imported?",
+    "expectedType": "decision",
+    "expectedFact": "Lucide React"
+  },
+  {
+    "id": 10,
+    "sessionId": "session-security",
+    "history": [
+      {"role": "User", "text": "Never expose the administrative secret key in any client-side file or build output logs."},
+      {"role": "Assistant", "text": "Warning registered: administrative secret key must not be exposed in client code."}
+    ],
+    "query": "What is our security constraint regarding secret keys?",
+    "expectedType": "constraint",
+    "expectedFact": "secret key"
+  },
+  {
+    "id": 11,
+    "sessionId": "session-lint",
+    "history": [
+      {"role": "User", "text": "Enforce strict TypeScript checks in tsconfig, including noImplicitAny and strictNullChecks."},
+      {"role": "Assistant", "text": "Configuring strict TypeScript type check options."}
+    ],
+    "query": "What are the TypeScript configuration rules?",
+    "expectedType": "constraint",
+    "expectedFact": "strict"
+  },
+  {
+    "id": 12,
+    "sessionId": "session-tests",
+    "history": [
+      {"role": "User", "text": "We will write unit tests using Vitest and end-to-end user path tests using Playwright."},
+      {"role": "Assistant", "text": "Vitest for unit testing and Playwright for E2E tests are configured."}
+    ],
+    "query": "What testing frameworks are we using?",
+    "expectedType": "decision",
+    "expectedFact": "Vitest"
+  },
+  {
+    "id": 13,
+    "sessionId": "session-goal",
+    "history": [
+      {"role": "User", "text": "Our primary goal is to build a high-performance token counter extension for developer productivity."},
+      {"role": "Assistant", "text": "Goal saved: building high-performance token counter browser extension."}
+    ],
+    "query": "What is the primary goal of the Eskay project?",
+    "expectedType": "goal",
+    "expectedFact": "token counter"
+  },
+  {
+    "id": 14,
+    "sessionId": "session-todo",
+    "history": [
+      {"role": "User", "text": "Next steps include implementing the IndexedDB store and adding cosine similarity calculations."},
+      {"role": "Assistant", "text": "Next steps recorded: implementing IndexedDB and adding cosine similarity calculations."}
+    ],
+    "query": "What are the remaining tasks we need to build next?",
+    "expectedType": "nextStep",
+    "expectedFact": "IndexedDB"
+  },
+  {
+    "id": 15,
+    "sessionId": "session-docker",
+    "history": [
+      {"role": "User", "text": "We need to containerize the database container using Docker Compose with volume mapping."},
+      {"role": "Assistant", "text": "Aligned: containerizing PostgreSQL with volume mapping using Docker Compose."}
+    ],
+    "query": "How is our database container configured for development?",
+    "expectedType": "decision",
+    "expectedFact": "Docker"
+  }
+]

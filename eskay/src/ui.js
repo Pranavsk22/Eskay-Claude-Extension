@@ -497,6 +497,10 @@
           <label class="ek-checkbox-label">
             <input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context
           </label>
+          <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; border-top: 1px solid var(--cb-border); padding-top: 8px; font-size: 11px;">
+            <span style="color: var(--cb-text-muted);">Memory Management:</span>
+            <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and prune old memories">🧹 Clean Memory</button>
+          </div>
         </div>
 
         <div class="ek-actions-row">
@@ -509,7 +513,10 @@
               <span class="ek-brutal-slider"></span>
             </label>
           </div>
-          <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" style="margin-left: auto;">⬇ Retrieve Context</button>
+          <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+            <button class="ek-btn ek-btn-recall" id="ek-btn-recall" title="Recall relevant memories for this prompt">🔍 Recall Memory</button>
+            <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" title="Index and export context">⬇ Retrieve Context</button>
+          </div>
           <div class="ek-delta" id="ek-delta-display">−0 tokens saved</div>
         </div>
 
@@ -625,6 +632,20 @@
           window.EskayExporter.exportContext();
         }
       });
+
+      const btnRecall = document.getElementById('ek-btn-recall');
+      if (btnRecall) {
+        btnRecall.addEventListener('click', () => {
+          this.handleMemoryRecall();
+        });
+      }
+
+      const btnClean = document.getElementById('ek-btn-clean');
+      if (btnClean) {
+        btnClean.addEventListener('click', () => {
+          this.handleMemoryClean();
+        });
+      }
       
       // Clicking the dashboard triggers a refresh of usage
       const dashboard = document.querySelector('.ek-dashboard');
@@ -634,6 +655,91 @@
             window.Eskay.refreshUsage();
           }
         });
+      }
+    },
+
+    async handleMemoryRecall() {
+      const inputEl = document.querySelector('[contenteditable="true"], textarea');
+      if (!inputEl) return;
+
+      const currentText = (inputEl.innerText || inputEl.value || '').trim();
+      const queryText = currentText || "general project context and goals";
+      
+      if (window.EskayUI) {
+        window.EskayUI.showToast("Recalling relevant past memories...");
+      }
+
+      try {
+        if (!window.transformers) {
+          throw new Error("AI pipeline not loaded yet");
+        }
+        
+        if (window.EskayUI) {
+          window.EskayUI.showToast("Initializing embedding model for search...");
+        }
+        
+        if (!window.eskayEmbeddingPipeline) {
+          window.transformers.env.allowLocalModels = false;
+          window.eskayEmbeddingPipeline = await window.transformers.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        }
+        
+        const output = await window.eskayEmbeddingPipeline(queryText, { pooling: 'mean', normalize: true });
+        const queryEmbedding = Array.from(output.data);
+        
+        if (window.EskayVectorStore) {
+          const results = await window.EskayVectorStore.search(queryEmbedding, 5);
+          
+          if (!results || results.length === 0) {
+            if (window.EskayUI) {
+              window.EskayUI.showToast("No relevant past memories found in the database.");
+            }
+            return;
+          }
+
+          let memoryBlock = "<eskay-memory>\n### Relevant Context from Past Sessions:\n";
+          results.forEach(res => {
+            const displayType = res.type.toUpperCase();
+            memoryBlock += `- **[${displayType}]**: ${res.text}\n`;
+          });
+          memoryBlock += "</eskay-memory>\n\n";
+
+          let cleanText = currentText;
+          const memoryRegex = /<eskay-memory>[\s\S]*?<\/eskay-memory>\n*/i;
+          if (memoryRegex.test(cleanText)) {
+            cleanText = cleanText.replace(memoryRegex, '');
+          }
+          
+          const newText = memoryBlock + cleanText;
+          setInputValue(inputEl, newText);
+          
+          if (window.EskayUI) {
+            window.EskayUI.showToast(`✓ Injected ${results.length} relevant memories!`);
+          }
+        }
+      } catch (err) {
+        console.error("Eskay memory recall failed:", err);
+        if (window.EskayUI) {
+          window.EskayUI.showToast("Memory recall failed: AI model loading error.");
+        }
+      }
+    },
+
+    async handleMemoryClean() {
+      if (window.EskayUI) {
+        window.EskayUI.showToast("Pruning and consolidating memory database...");
+      }
+      try {
+        if (window.EskayConsolidator) {
+          const count = await window.EskayConsolidator.consolidate();
+          if (window.EskayUI) {
+            window.EskayUI.showToast(`✓ Cleaned memory database! Pruned ${count} redundant records.`);
+          }
+        }
+      } catch (err) {
+        console.error("Eskay memory consolidation failed:", err);
+        if (window.EskayUI) {
+          window.EskayUI.showToast("Failed to consolidate memory database.");
+        }
       }
     },
 

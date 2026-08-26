@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Eskay Memory Recall Evaluation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #a6e3a1;
+            border-bottom: 2px solid #45475a;
+            padding-bottom: 10px;
+        }
+        .result {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .pass {
+            background-color: rgba(166, 227, 161, 0.15);
+            color: #a6e3a1;
+            border-left: 5px solid #a6e3a1;
+        }
+        .fail {
+            background-color: rgba(243, 139, 168, 0.15);
+            color: #f38ba8;
+            border-left: 5px solid #f38ba8;
+        }
+        #status-header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .status-pass {
+            background-color: #a6e3a1;
+            color: #11111b;
+        }
+        .status-fail {
+            background-color: #f38ba8;
+            color: #11111b;
+        }
+        .info {
+            background-color: rgba(137, 180, 250, 0.15);
+            color: #89b4fa;
+            border-left: 5px solid #89b4fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Eskay Memory Recall Evaluation</h1>
+    <div id="status-header" class="info">Running evaluations... This may take a minute as it initializes the embedding model and embeds the test cases.</div>
+    <div id="eval-results"></div>
+
+    <script src="../src/transformers.js"></script>
+    <script src="../memory/schema.js"></script>
+    <script src="../memory/vectorStore.js"></script>
+    <script src="../memory/consolidate.js"></script>
+    <script src="recall_eval.js"></script>
+    <script>
+        const resultsDiv = document.getElementById('eval-results');
+        const statusHeader = document.getElementById('status-header');
+
+        function logResult(passed, message) {
+            const div = document.createElement('div');
+            div.className = `result ${passed ? 'pass' : 'fail'}`;
+            if (message.includes('Querying:') || message.includes('Fetching') || message.includes('Clearing') || message.includes('Loading')) {
+                div.className = `result info`;
+            }
+            div.innerText = `${passed ? '✅' : '❌'} ${message}`;
+            resultsDiv.appendChild(div);
+            // Scroll to bottom as it prints
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function updateOverallStatus(passed, summaryText) {
+            statusHeader.className = passed ? 'status-pass' : 'status-fail';
+            statusHeader.innerText = `Evaluation Finished: ${summaryText}`;
+        }
+
+        window.onload = () => {
+            if (window.EskayEval) {
+                window.EskayEval.runEvaluation(logResult, updateOverallStatus);
+            } else {
+                logResult(false, "EskayEval not found");
+            }
+        };
+    </script>
+</body>
+</html>

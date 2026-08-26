@@ -46,9 +46,9 @@ Directly integrated below the Claude input area, offering two powerful optimizat
 * **Max Efficiency:** Enriches your prompt with curated, domain-specific expert personas, output formats, reasoning triggers, and custom rules.
 * **Interactive Modifiers:** Easily toggle individual prompt options (like *One-Shot Examples*, *Brutal Critique*, or *Chain of Thought*) with real-time token delta displays.
 
-### 3. Context Retrieval & Exporter
-* Click **Retrieve Context** in the toolbar to scrape all messages, code blocks, and attachments in your active chat.
-* Instantly downloads a clean, structured `.md` handoff document mapping out your goals, accomplishments, constraints, code snippets, and next steps — allowing you to resume seamlessly in a fresh chat window when limits are reached!
+### 3. Context Retrieval & Persistent Memory
+* Click **Retrieve Context** in the toolbar to scrape all messages, code blocks, and attachments in your active chat. It automatically chunks the conversation into structured memory records, computes client-side vector embeddings, and saves them to local browser storage (`IndexedDB`). It also downloads a clean, structured `.md` handoff document featuring the full chronological chat log, allowing you to resume work seamlessly.
+* Click **Memory Recall** in any new chat window to query the vector store via cosine similarity and automatically inject the top-5 most relevant past goals, decisions, and constraints into your active prompt preamble, establishing a persistent memory loop. Read the [Memory Architecture](MEMORY-ARCHITECTURE.md) document to learn more about the design rationale.
 
 ---
 

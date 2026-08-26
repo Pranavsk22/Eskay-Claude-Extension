@@ -16,10 +16,10 @@ Eskay is a premium, client-side browser extension and userscript designed specif
    - **Max Efficiency Mode:** Intelligent structuring using best-practice prompt templates, domain inference (software engineering, writing, mathematics, data analysis, marketing), output format specifications, chain-of-thought triggers, and one-shot examples.
    - **Token Delta Display:** Live calculations of exactly how many tokens were saved or modified.
 
-3. **Context File Export (`MASTER_PROMPT.md`):**
-   - Click `⬇ Retrieve Context` to scrape all messages, attachments, and code blocks in your active chat.
-   - Generates a beautifully structured `MASTER_PROMPT.md` document mapping out conversation goals, accomplished tasks, key constraints, verbatim code artifacts, and unresolved next steps.
-   - Allows seamless handoffs into new chat windows once limits are reached!
+3. **Context File Export & Persistent Memory:**
+   - Click `⬇ Retrieve Context` to scrape all messages, attachments, and code blocks in your active chat. It segments the conversation into structured memory records, computes client-side vector embeddings, saves them to local browser storage (`IndexedDB`), and exports a detailed `MASTER_PROMPT.md` file featuring the full chronological chat log.
+   - Click `🔍 Recall Memory` to query the vector store via cosine similarity and inject relevant past goals, decisions, and constraints directly into your active prompt preamble for cross-session persistent recall.
+
 
 ---
 
@@ -96,5 +96,5 @@ To verify that Eskay is working perfectly locally:
 4. Verify the **Eskay Toolbar** renders properly underneath/adjacent to the chat input area.
 5. Check that the **Session**, **Weekly**, and **Context** meters load their status.
 6. Type a message in the input box, click **Optimize** (toggle between *Minimize Tokens* and *Max Efficiency*), and check if the prompt compression/templating works and updates the token delta display.
-7. Click **Retrieve Context** and verify that a `MASTER_PROMPT.md` file downloads successfully with conversation content structured correctly.
+7. Click **Retrieve Context** and verify that a `MASTER_PROMPT.md` file downloads successfully with the full chat log appended. Verify that database records are created in IndexedDB. Type a query in a new chat, click **Recall Memory**, and check that relevant context is injected.
 
