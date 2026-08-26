@@ -2119,6 +2119,31 @@ End by naming the concerns from your list in (2) that beginners most often leave
     }
   };
 
+  function cleanAndAbstract(text) {
+    if (!text || typeof text !== 'string') return "";
+    
+    // Remove attachment dumps, tool calls, tool results
+    let cleaned = text.replace(/\[Attached File:[\s\S]*?\]/gi, '');
+    cleaned = cleaned.replace(/\[Attached File: Attachment\]/gi, '');
+    cleaned = cleaned.replace(/\[Tool Use:[\s\S]*?\]/gi, '');
+    cleaned = cleaned.replace(/\[Tool Result[\s\S]*?\]/gi, '');
+    
+    // Normalize spaces and newlines
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // Abstract to a few lines (max 200 chars / first sentence)
+    if (cleaned.length > 200) {
+      const match = cleaned.match(/^.*?[.?!](?=\s|$)/);
+      if (match && match[0].length > 15 && match[0].length < 200) {
+        cleaned = match[0];
+      } else {
+        cleaned = cleaned.substring(0, 197) + '...';
+      }
+    }
+    
+    return cleaned;
+  }
+
   // --- 4.1 Memory Schema ---
   const MemoryRecordSchema = {
     type: 'object',
@@ -2563,8 +2588,16 @@ End by naming the concerns from your list in (2) that beginners most often leave
 
       function addCandidate(type, text, sourceIndex) {
         if (!text || typeof text !== 'string') return;
-        const cleanText = text.trim();
-        if (cleanText.length < 5) return;
+        
+        const cleanText = cleanAndAbstract(text);
+        if (cleanText.length < 10) return; // skip too short
+        
+        const lower = cleanText.toLowerCase();
+        // Skip conversational filler/greetings/meta-critiques
+        if (lower.startsWith("hi ") || lower.startsWith("hello ") || lower.startsWith("hey ") || lower.startsWith("verdict:")) {
+          return;
+        }
+
         if (seenTexts.has(cleanText)) return;
         seenTexts.add(cleanText);
 
