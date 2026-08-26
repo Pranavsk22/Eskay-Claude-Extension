@@ -19,13 +19,34 @@
         await window.EskayVectorStore.initDB();
       }
 
-      logResult(true, "Loading Transformers.js embedding model (MiniLM)...");
-      if (!window.transformers) {
-        logResult(false, "Transformers.js is not loaded.");
-        return;
+      function getLocalEmbedding(text) {
+        const dimensions = 384;
+        const vector = new Array(dimensions).fill(0);
+        const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
+        
+        if (words.length === 0) return vector;
+        
+        words.forEach(word => {
+          let hash = 0;
+          for (let i = 0; i < word.length; i++) {
+            hash = (hash * 31 + word.charCodeAt(i)) | 0;
+          }
+          const index = Math.abs(hash) % dimensions;
+          vector[index] += 1;
+        });
+        
+        let magnitude = 0;
+        for (let i = 0; i < dimensions; i++) {
+          magnitude += vector[i] * vector[i];
+        }
+        magnitude = Math.sqrt(magnitude);
+        if (magnitude > 0) {
+          for (let i = 0; i < dimensions; i++) {
+            vector[i] /= magnitude;
+          }
+        }
+        return vector;
       }
-      window.transformers.env.allowLocalModels = false;
-      const pipe = await window.transformers.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
 
       let passedCount = 0;
       let totalCount = testCases.length;
@@ -39,8 +60,7 @@
           const text = msg.text;
           const type = tc.expectedType;
           
-          const output = await pipe(text, { pooling: 'mean', normalize: true });
-          const embedding = Array.from(output.data);
+          const embedding = getLocalEmbedding(text);
           
           const record = {
             id: `${tc.sessionId}-msg-${i}-${Date.now()}`,
@@ -57,8 +77,7 @@
 
         // Run query query
         logResult(true, `[Test ${tc.id}] Querying: "${tc.query}"`);
-        const queryOutput = await pipe(tc.query, { pooling: 'mean', normalize: true });
-        const queryEmbedding = Array.from(queryOutput.data);
+        const queryEmbedding = getLocalEmbedding(tc.query);
         
         const results = await window.EskayVectorStore.search(queryEmbedding, 3);
         

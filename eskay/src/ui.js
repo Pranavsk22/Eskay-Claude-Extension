@@ -669,22 +669,37 @@
         window.EskayUI.showToast("Recalling relevant past memories...");
       }
 
+      function getLocalEmbedding(text) {
+        const dimensions = 384;
+        const vector = new Array(dimensions).fill(0);
+        const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
+        
+        if (words.length === 0) return vector;
+        
+        words.forEach(word => {
+          let hash = 0;
+          for (let i = 0; i < word.length; i++) {
+            hash = (hash * 31 + word.charCodeAt(i)) | 0;
+          }
+          const index = Math.abs(hash) % dimensions;
+          vector[index] += 1;
+        });
+        
+        let magnitude = 0;
+        for (let i = 0; i < dimensions; i++) {
+          magnitude += vector[i] * vector[i];
+        }
+        magnitude = Math.sqrt(magnitude);
+        if (magnitude > 0) {
+          for (let i = 0; i < dimensions; i++) {
+            vector[i] /= magnitude;
+          }
+        }
+        return vector;
+      }
+
       try {
-        if (!window.transformers) {
-          throw new Error("AI pipeline not loaded yet");
-        }
-        
-        if (window.EskayUI) {
-          window.EskayUI.showToast("Initializing embedding model for search...");
-        }
-        
-        if (!window.eskayEmbeddingPipeline) {
-          window.transformers.env.allowLocalModels = false;
-          window.eskayEmbeddingPipeline = await window.transformers.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-        }
-        
-        const output = await window.eskayEmbeddingPipeline(queryText, { pooling: 'mean', normalize: true });
-        const queryEmbedding = Array.from(output.data);
+        const queryEmbedding = getLocalEmbedding(queryText);
         
         if (window.EskayVectorStore) {
           const results = await window.EskayVectorStore.search(queryEmbedding, 5);

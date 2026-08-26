@@ -154,34 +154,33 @@
     return matches;
   }
 
-  let embedPipeline = null;
-  let pipelineLoading = null;
-
   async function getEmbedding(text) {
-    if (embedPipeline) {
-      const output = await embedPipeline(text, { pooling: 'mean', normalize: true });
-      return Array.from(output.data);
-    }
-
-    if (pipelineLoading) {
-      await pipelineLoading;
-      const output = await embedPipeline(text, { pooling: 'mean', normalize: true });
-      return Array.from(output.data);
-    }
-
-    pipelineLoading = (async () => {
-      if (!window.transformers) {
-        throw new Error("Transformers.js library not loaded in page context");
-      }
-      window.transformers.env.allowLocalModels = false;
-      embedPipeline = await window.transformers.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-    })();
-
-    await pipelineLoading;
-    pipelineLoading = null;
+    const dimensions = 384;
+    const vector = new Array(dimensions).fill(0);
+    const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
     
-    const output = await embedPipeline(text, { pooling: 'mean', normalize: true });
-    return Array.from(output.data);
+    if (words.length === 0) return vector;
+    
+    words.forEach(word => {
+      let hash = 0;
+      for (let i = 0; i < word.length; i++) {
+        hash = (hash * 31 + word.charCodeAt(i)) | 0;
+      }
+      const index = Math.abs(hash) % dimensions;
+      vector[index] += 1;
+    });
+    
+    let magnitude = 0;
+    for (let i = 0; i < dimensions; i++) {
+      magnitude += vector[i] * vector[i];
+    }
+    magnitude = Math.sqrt(magnitude);
+    if (magnitude > 0) {
+      for (let i = 0; i < dimensions; i++) {
+        vector[i] /= magnitude;
+      }
+    }
+    return vector;
   }
 
   const EskayExporter = {
@@ -229,7 +228,7 @@
       }
 
       if (window.EskayUI) {
-        window.EskayUI.showToast("Initializing AI memory model (~23MB)... Please wait.");
+        window.EskayUI.showToast("Retrieving and indexing conversation context...");
       }
 
       // Calculate approximate tokens of the whole conversation
@@ -471,9 +470,6 @@
       });
 
       // Compute embeddings and save candidate records to IndexedDB
-      if (window.EskayUI) {
-        window.EskayUI.showToast("🧠 Eskay: Extracting and indexing conversation memory...");
-      }
 
       for (const record of candidateRecords) {
         try {
