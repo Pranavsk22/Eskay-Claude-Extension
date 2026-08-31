@@ -345,7 +345,7 @@
         id: 'sales',
         persona: 'a top-performing enterprise sales executive who has closed multi-million dollar deals. You evaluate messaging based on trust building, objection handling, stakeholder alignment, urgency creation, and likelihood of conversion',
         keywords: [
-          { pattern: /\b(prospecting|cold email|lead generation|b2b sales)\b/g, weight: 2.0 },
+          { pattern: /\b(prospecting|cold email|cold outreach|lead generation|b2b sales|b2b)\b/g, weight: 2.0 },
           { pattern: /\b(sales|sales pitch|outreach)\b/g, weight: 1.0 }
         ]
       },

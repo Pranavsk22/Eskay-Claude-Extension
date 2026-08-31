@@ -20,6 +20,9 @@
       }
 
       function getLocalEmbedding(text) {
+        if (window.EskayVectorStore && typeof window.EskayVectorStore.getEmbedding === 'function') {
+          return window.EskayVectorStore.getEmbedding(text);
+        }
         const dimensions = 384;
         const vector = new Array(dimensions).fill(0);
         const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
@@ -97,6 +100,61 @@
         } else {
           logResult(false, `[Test ${tc.id}] FAIL: Retrieved text "${topRecord.text}" of type "${topRecord.type}" but expected "${tc.expectedFact}" of type "${tc.expectedType}"`);
         }
+      }
+
+      // Consolidation verification test phase
+      totalCount++;
+      logResult(true, "[Consolidation Test] Testing near-duplicate memory pruning (>0.85 similarity)...");
+      if (window.EskayConsolidator) {
+        const now = Date.now();
+        const oldDecision = {
+          id: 'test-dup-1-old',
+          sessionId: 'session-dup-test',
+          timestamp: now - 50000,
+          type: 'decision',
+          text: 'We decided to use Redis for session caching and rate limit APIs.',
+          embedding: getLocalEmbedding('We decided to use Redis for session caching and rate limit APIs.'),
+          sourceMessageIndex: 0
+        };
+        const newDecision = {
+          id: 'test-dup-1-new',
+          sessionId: 'session-dup-test',
+          timestamp: now,
+          type: 'decision',
+          text: 'We decided to use Redis for session caching and rate limit APIs.',
+          embedding: getLocalEmbedding('We decided to use Redis for session caching and rate limit APIs.'),
+          sourceMessageIndex: 1
+        };
+        const distinctConstraint = {
+          id: 'test-distinct-1',
+          sessionId: 'session-dup-test',
+          timestamp: now,
+          type: 'constraint',
+          text: 'Never expose confidential database credentials in client code.',
+          embedding: getLocalEmbedding('Never expose confidential database credentials in client code.'),
+          sourceMessageIndex: 2
+        };
+
+        await window.EskayVectorStore.saveRecord(oldDecision);
+        await window.EskayVectorStore.saveRecord(newDecision);
+        await window.EskayVectorStore.saveRecord(distinctConstraint);
+
+        const preRecords = await window.EskayVectorStore.getRecordsBySession('session-dup-test');
+        const prunedCount = await window.EskayConsolidator.consolidate();
+        const postRecords = await window.EskayVectorStore.getRecordsBySession('session-dup-test');
+
+        const keptNew = postRecords.some(r => r.id === 'test-dup-1-new');
+        const deletedOld = !postRecords.some(r => r.id === 'test-dup-1-old');
+        const keptDistinct = postRecords.some(r => r.id === 'test-distinct-1');
+
+        if (preRecords.length === 3 && prunedCount >= 1 && postRecords.length === 2 && keptNew && deletedOld && keptDistinct) {
+          logResult(true, `[Consolidation Test] PASS: Near-duplicate pruned successfully (${preRecords.length} -> ${postRecords.length} records, retained newest timestamp).`);
+          passedCount++;
+        } else {
+          logResult(false, `[Consolidation Test] FAIL: Expected 3 -> 2 records, got pre=${preRecords.length}, pruned=${prunedCount}, post=${postRecords.length}`);
+        }
+      } else {
+        logResult(false, "[Consolidation Test] FAIL: EskayConsolidator not loaded.");
       }
 
       const passRate = (passedCount / totalCount) * 100;

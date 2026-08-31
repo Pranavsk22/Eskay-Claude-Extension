@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eskay — Conversation Trajectory Inspector</title>
+    <style>
+        :root {
+            --bg-base: #11111b;
+            --bg-surface: #181825;
+            --bg-overlay: #1e1e2e;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #cdd6f4;
+            --text-muted: #9399b2;
+            --accent-purple: #7C3AED;
+            --accent-orange: #E8721C;
+            --accent-green: #10B981;
+            --accent-blue: #3B82F6;
+            --accent-red: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            box-shadow: 0 0 10px var(--accent-orange);
+        }
+
+        .brand h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+
+        .brand span {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), #6D28D9);
+            border-color: rgba(124, 58, 237, 0.4);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #8B5CF6, var(--accent-purple));
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .dropzone {
+            background: var(--bg-surface);
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-purple);
+            background: rgba(124, 58, 237, 0.04);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .stat-val {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            font-family: monospace;
+        }
+
+        .layout-split {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .layout-split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-body {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .msg-turn {
+            background: var(--bg-overlay);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .msg-turn.user {
+            border-left: 4px solid var(--accent-purple);
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        .msg-turn.assistant {
+            border-left: 4px solid var(--accent-orange);
+            background: rgba(232, 114, 28, 0.05);
+        }
+
+        .msg-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+        }
+
+        .role-badge {
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .role-badge.user {
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+        }
+
+        .role-badge.assistant {
+            background: rgba(232, 114, 28, 0.2);
+            color: #fdba74;
+        }
+
+        .msg-text {
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #bac2de;
+        }
+
+        .code-snippet {
+            background: #0d0e15;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #a6e3a1;
+            overflow-x: auto;
+        }
+
+        .entity-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 12px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .entity-item.goal { border-color: var(--accent-green); }
+        .entity-item.constraint { border-color: var(--accent-red); }
+        .entity-item.decision { border-color: var(--accent-blue); }
+        .entity-item.nextStep { border-color: var(--accent-orange); }
+
+        .entity-tag {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="brand-dot"></div>
+            <h1>Eskay Trajectory Inspector</h1>
+            <span>Trajectory & Agent Debugger</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" id="btn-load-sample">Load Sample Trajectory</button>
+            <label class="btn btn-primary" style="margin: 0; display: inline-block;">
+                Upload MASTER_PROMPT.md
+                <input type="file" id="file-input" accept=".md,.txt,.json" style="display: none;">
+            </label>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="dropzone" id="dropzone">
+            <p style="font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 4px;">Drag & Drop exported MASTER_PROMPT.md or click to browse</p>
+            <p style="font-size: 12px; color: var(--text-muted);">Visualizes message trees, structured memory chunks, and code artifacts</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Messages</div>
+                <div class="stat-val" id="stat-messages">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Approx Tokens</div>
+                <div class="stat-val" id="stat-tokens">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Code Artifacts</div>
+                <div class="stat-val" id="stat-artifacts">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Structured Memories</div>
+                <div class="stat-val" id="stat-memories">0</div>
+            </div>
+        </div>
+
+        <div class="layout-split">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Conversation Trajectory Timeline</span>
+                    <span id="timeline-count" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">0 turns</span>
+                </div>
+                <div class="panel-body" id="timeline-body">
+                    <div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 13px;">
+                        No conversation loaded yet. Click "Load Sample Trajectory" or upload a handoff document.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Extracted Memory Chunks</span>
+                    <span id="memory-count" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">0 items</span>
+                </div>
+                <div class="panel-body" id="memory-body">
+                    <div style="text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 13px;">
+                        Structured goals, decisions, constraints will appear here.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const btnLoadSample = document.getElementById('btn-load-sample');
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function parseHandoffMarkdown(content) {
+            const messages = [];
+            const memories = [];
+            let artifacts = 0;
+
+            // Extract goal
+            const goalMatch = content.match(/## 🎯 Primary Goal\s+([\s\S]*?)(?=##|$)/);
+            if (goalMatch) {
+                memories.push({ type: 'goal', text: goalMatch[1].trim() });
+            }
+
+            // Extract decisions / accomplishments
+            const accMatch = content.match(/## ✅ What Was Accomplished\s+([\s\S]*?)(?=##|$)/);
+            if (accMatch) {
+                const lines = accMatch[1].split('\n').filter(l => l.trim().startsWith('-'));
+                lines.forEach(l => memories.push({ type: 'decision', text: l.replace(/^-\s*/, '').trim() }));
+            }
+
+            // Extract constraints
+            const conMatch = content.match(/## ⚠️ Constraints & Guidelines\s+([\s\S]*?)(?=##|$)/);
+            if (conMatch) {
+                const lines = conMatch[1].split('\n').filter(l => l.trim().startsWith('-'));
+                lines.forEach(l => memories.push({ type: 'constraint', text: l.replace(/^-\s*/, '').trim() }));
+            }
+
+            // Extract full chat history
+            const historyMatch = content.match(/## 💬 Full Chat History\s+([\s\S]*?)(?=---|\*Generated|$)/);
+            if (historyMatch) {
+                const parts = historyMatch[1].split(/### Message \d+ \((User|Assistant)\)\n/);
+                for (let i = 1; i < parts.length; i += 2) {
+                    const role = parts[i];
+                    const text = (parts[i + 1] || '').trim();
+                    if (text) {
+                        const codeBlocks = [];
+                        const codeRegex = /```([a-zA-Z0-9+#-]+)?\n([\s\S]*?)```/g;
+                        let cm;
+                        while ((cm = codeRegex.exec(text)) !== null) {
+                            artifacts++;
+                            codeBlocks.push({ lang: cm[1] || 'code', code: cm[2] });
+                        }
+                        messages.push({ role, text, codeBlocks });
+                    }
+                }
+            }
+
+            return { messages, memories, artifacts };
+        }
+
+        function renderTrajectory(data) {
+            const timelineBody = document.getElementById('timeline-body');
+            const memoryBody = document.getElementById('memory-body');
+
+            const totalTokens = data.messages.reduce((acc, m) => acc + Math.ceil(m.text.length / 4), 0);
+
+            document.getElementById('stat-messages').innerText = data.messages.length;
+            document.getElementById('stat-tokens').innerText = `~${totalTokens.toLocaleString()}`;
+            document.getElementById('stat-artifacts').innerText = data.artifacts;
+            document.getElementById('stat-memories').innerText = data.memories.length;
+
+            document.getElementById('timeline-count').innerText = `${data.messages.length} turns`;
+            document.getElementById('memory-count').innerText = `${data.memories.length} chunks`;
+
+            timelineBody.innerHTML = '';
+            data.messages.forEach((msg, idx) => {
+                const isUser = msg.role.toLowerCase() === 'user';
+                const turn = document.createElement('div');
+                turn.className = `msg-turn ${isUser ? 'user' : 'assistant'}`;
+
+                let codeHtml = '';
+                if (msg.codeBlocks && msg.codeBlocks.length > 0) {
+                    msg.codeBlocks.forEach(cb => {
+                        codeHtml += `<pre class="code-snippet"><code>${escapeHtml(cb.code)}</code></pre>`;
+                    });
+                }
+
+                turn.innerHTML = `
+                    <div class="msg-header">
+                        <span class="role-badge ${isUser ? 'user' : 'assistant'}">#${idx + 1} ${msg.role}</span>
+                        <span style="color: var(--text-muted); font-family: monospace; font-size: 11px;">~${Math.ceil(msg.text.length / 4)} tokens</span>
+                    </div>
+                    <div class="msg-text">${escapeHtml(msg.text)}</div>
+                    ${codeHtml}
+                `;
+                timelineBody.appendChild(turn);
+            });
+
+            memoryBody.innerHTML = '';
+            data.memories.forEach(mem => {
+                const item = document.createElement('div');
+                item.className = `entity-item ${mem.type}`;
+                item.innerHTML = `
+                    <div class="entity-tag" style="color: ${mem.type === 'goal' ? '#a6e3a1' : mem.type === 'constraint' ? '#f38ba8' : '#89b4fa'}">[${mem.type}]</div>
+                    <div>${escapeHtml(mem.text)}</div>
+                `;
+                memoryBody.appendChild(item);
+            });
+        }
+
+        const SAMPLE_TRAJECTORY = {
+            messages: [
+                { role: 'User', text: 'We need to implement client-side memory consolidation in Eskay using cosine similarity > 0.85.', codeBlocks: [] },
+                { role: 'Assistant', text: 'Understood. We will implement `consolidate.js` to iterate over stored records and merge near-duplicates, keeping the newest timestamp.', codeBlocks: [{ lang: 'javascript', code: 'async function consolidate() {\n  const records = await vectorStore.getAllRecords();\n  // Deduplicate > 0.85\n}' }] },
+                { role: 'User', text: 'Make sure all memory records preserve 100% client-side privacy without network calls.', codeBlocks: [] },
+                { role: 'Assistant', text: 'Verified: All vector embeddings and IndexedDB operations run strictly in-browser.', codeBlocks: [] }
+            ],
+            memories: [
+                { type: 'goal', text: 'Implement client-side memory consolidation in Eskay using cosine similarity > 0.85.' },
+                { type: 'decision', text: 'Implement consolidate.js to iterate over stored records and merge near-duplicates.' },
+                { type: 'constraint', text: 'All memory records preserve 100% client-side privacy without network calls.' }
+            ],
+            artifacts: 1
+        };
+
+        btnLoadSample.addEventListener('click', () => {
+            renderTrajectory(SAMPLE_TRAJECTORY);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const content = evt.target.result;
+                const parsed = parseHandoffMarkdown(content);
+                renderTrajectory(parsed);
+            };
+            reader.readAsText(file);
+        });
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    renderTrajectory(parseHandoffMarkdown(evt.target.result));
+                };
+                reader.readAsText(file);
+            }
+        });
+    </script>
+</body>
+</html>

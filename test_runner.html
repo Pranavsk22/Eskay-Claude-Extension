@@ -56,6 +56,9 @@
     <div id="status-header">Running tests...</div>
     <div id="test-results"></div>
 
+    <script src="eskay/memory/schema.js"></script>
+    <script src="eskay/memory/vectorStore.js"></script>
+    <script src="eskay/memory/consolidate.js"></script>
     <script src="eskay/src/optimizer.js"></script>
     <script>
         const resultsDiv = document.getElementById('test-results');
@@ -493,8 +496,29 @@ Provide a brutal, honest, and completely unglazed critique. Do not sugarcoat, so
               allPassed = false;
             }
 
+            // 10. Differential Testing Checks
+            const diffCases = [
+              { prompt: "Could you please help me write a clean python script using asyncio to scrape web pages?", expectedDomain: "code" },
+              { prompt: "Please review my resume for a senior staff software engineering role at Google.", expectedDomain: "resume" },
+              { prompt: "I was wondering if we could design a PostgreSQL schema for a multi-tenant SaaS application.", expectedDomain: "database" },
+              { prompt: "Draft a high-converting cold outreach email sequence targeting enterprise CTOs for our B2B DevOps product.", expectedDomain: "marketing" }
+            ];
+
+            let diffPassed = 0;
+            diffCases.forEach(dc => {
+              const min = EskayOptimizer.optimize(dc.prompt, 'minimize');
+              const max = EskayOptimizer.optimize(dc.prompt, 'maximize', { persona: true });
+              const dom = EskayOptimizer.detectDomain(dc.prompt);
+              const isCompressed = min.length < dc.prompt.length;
+              const hasPersona = max.startsWith('You are ');
+              const match = (dom === dc.expectedDomain) && isCompressed && hasPersona;
+              if (match) diffPassed++;
+              logResult(match, `Differential Test: "${dc.prompt.slice(0, 35)}..." -> Domain: ${dom}, Minimized: ${isCompressed}, Persona Injected: ${hasPersona}`);
+            });
+            logResult(diffPassed === diffCases.length, `Differential Testing Pass Rate: ${diffPassed}/${diffCases.length}`);
+
             // Set final header
-            if (allPassed) {
+            if (allPassed && diffPassed === diffCases.length) {
                 statusHeader.className = 'status-pass';
                 statusHeader.innerText = 'ALL TESTS PASSED SUCCESSFULLY';
             } else {

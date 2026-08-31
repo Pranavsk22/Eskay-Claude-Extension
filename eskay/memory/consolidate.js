@@ -63,7 +63,8 @@
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = consolidateExport;
-  } else {
+  }
+  if (typeof window !== 'undefined') {
     window.EskayConsolidator = consolidateExport;
   }
 })();

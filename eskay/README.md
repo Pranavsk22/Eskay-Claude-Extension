@@ -1,100 +1,67 @@
-# Eskay — Claude.ai Usage Dashboard & Prompt Optimizer
+# Eskay — Claude.ai Extension Package
 
-Eskay is a premium, client-side browser extension and userscript designed specifically for **Claude.ai** to prevent token waste, eliminate limit blindness, and safeguard conversation context.
-
-## 🌟 Key Features
-
-1. **Usage Dashboard:**
-   - **Session Quota (5-Hour Rolling):** Live progress bar displaying remaining messages and precise time until reset.
-   - **Weekly Quota (7-Day Rolling):** Live progress bar displaying long-term consumption and time until reset.
-   - **Context Window Counter:** Real-time BPE token count for your active chat conversation (compared against Claude's 200k limit).
-   - **Ephemeral Cache Timer:** 5-minute countdown tracking conversation caching to help you utilize prompt caching.
-   - **Dynamic Warning Indicators:** Progress bars shift color from **Orange** to **Amber (>80%)** and **Red (>95%)** based on utilization.
-
-2. **Prompt Optimizer:**
-   - **Minimize Tokens Mode:** Rule-based NLP optimizer that removes polite/filler words, hedges, pronouns, meta-commentary, and redundant sentence structures to compress your prompts without losing semantic meaning.
-   - **Max Efficiency Mode:** Intelligent structuring using best-practice prompt templates, domain inference (software engineering, writing, mathematics, data analysis, marketing), output format specifications, chain-of-thought triggers, and one-shot examples.
-   - **Token Delta Display:** Live calculations of exactly how many tokens were saved or modified.
-
-3. **Context File Export & Persistent Memory:**
-   - Click `⬇ Retrieve Context` to scrape all messages, attachments, and code blocks in your active chat. It segments the conversation into structured memory records, computes client-side vector embeddings, saves them to local browser storage (`IndexedDB`), and exports a detailed `MASTER_PROMPT.md` file featuring the full chronological chat log.
-   - Click `🔍 Recall Memory` to query the vector store via cosine similarity and inject relevant past goals, decisions, and constraints directly into your active prompt preamble for cross-session persistent recall.
-
+This directory contains the unpacked Google Chrome / Chromium extension package for Eskay (Manifest V3).
 
 ---
 
-## 🛠 Installation Instructions
+## Directory Layout
 
-### Option A: Chrome / Edge / Brave Extension (Manifest V3)
-
-1. Clone or download this repository.
-2. Open your browser and navigate to the extensions page:
-   - **Chrome / Brave:** `chrome://extensions/`
-   - **Edge:** `edge://extensions/`
-3. Toggle on **Developer mode** in the upper-right corner.
-4. Click **Load unpacked** in the top-left.
-5. Select the `eskay` folder containing `manifest.json`.
-6. Open or refresh `https://claude.ai` to start using Eskay!
-
-### Option B: Greasemonkey / Tampermonkey Userscript
-
-1. Install the **Tampermonkey** or **Greasemonkey** extension in your browser.
-2. Create a new script in the Tampermonkey dashboard.
-3. Copy the entire contents of [eskay.user.js](userscript/eskay.user.js) and paste it into the editor.
-4. Save the script.
-5. Open or refresh `https://claude.ai/`!
+```
+eskay/
+├── manifest.json            # Manifest V3 extension configuration
+├── icons/                   # Extension icons (16x16, 48x48, 128x128)
+├── memory/
+│   ├── schema.js            # MemoryRecord schema validator
+│   ├── vectorStore.js       # IndexedDB storage + 384-d vector cosine search
+│   └── consolidate.js       # Automated near-duplicate memory consolidation pass
+├── src/
+│   ├── content.js           # Isolated-world orchestration and postMessage client
+│   ├── inject.js            # Main-world fetch/SSE network interceptor
+│   ├── optimizer.js         # Dual-mode prompt optimizer & 49-persona router
+│   ├── tokenizer.js         # BPE tokenizer & O(1) fingerprint token cache
+│   ├── o200k_base.js        # BPE vocabulary table
+│   ├── contextExporter.js   # Conversation tree scraper and MASTER_PROMPT.md exporter
+│   ├── trajectoryVisualizer.js # In-browser conversation trajectory inspector
+│   ├── usageTracker.js      # 5-hour/7-day quota and cache lifetime tracker
+│   └── ui.js                # DOM toolbar, dynamic progress bars, and modals
+├── styles/
+│   └── toolbar.css          # Styled components & responsive dark/light modes
+├── userscript/
+│   └── eskay.user.js        # Tampermonkey / Greasemonkey single-file bundle
+└── eval/
+    ├── eval_runner.html     # Browser-based LongMemEval test runner
+    ├── recall_eval.js       # LongMemEval retrieval regression harness
+    └── testset.json         # Labeled multi-session evaluation cases
+```
 
 ---
 
-## 🎨 Theme Accents
+## Installation (Unpacked)
 
-- **Primary Accent / Bars:** Orange (`#E8721C`) matching Claude's brand colors.
-- **Active Modes / Sub-options:** Violet (`#7C3AED`) representing active prompt engineering variables.
-- **Alert Colors:** Amber (`#F59E0B`) and Red (`#EF4444`) representing warning states.
+1. Open Chrome/Edge/Brave and navigate to `chrome://extensions/`.
+2. Toggle on **Developer mode** in the upper right.
+3. Click **Load unpacked** and select this `eskay` folder.
+4. Navigate to `https://claude.ai/`.
 
 ---
 
-## 📦 Packaging & Chrome Web Store Deployment
+## Chrome Web Store Packaging
 
-To publish Eskay to the Chrome Web Store, follow these steps:
+To generate a distribution zip archive for the Chrome Developer Console:
 
-### 1. Package the Extension
-Create a `.zip` file of the `eskay` folder. Make sure the zip contains the `manifest.json` at the root of the archive (i.e. not nested inside a subfolder inside the zip).
 - **Windows (PowerShell):**
   ```powershell
-  Compress-Archive -Path eskay\* -DestinationPath eskay.zip
+  Compress-Archive -Path eskay\* -DestinationPath eskay.zip -Force
   ```
-- **macOS / Linux (Terminal):**
+- **macOS / Linux:**
   ```bash
-  zip -r eskay.zip eskay/
+  cd eskay && zip -r ../eskay.zip . && cd ..
   ```
-
-### 2. Set Up a Google Chrome Developer Account
-1. Go to the [Chrome Web Store Developer Console](https://chrome.google.com/webstore/devconsole).
-2. Sign in with your Google account.
-3. Pay the one-time $5 USD developer registration fee (required by Google to prevent spam).
-
-### 3. Upload & Configure Your Extension
-1. In the console, click **New Item**.
-2. Upload the `eskay.zip` file you created in step 1.
-3. Fill out the store listing details:
-   - **Detailed Description:** Describe Eskay's features (Usage Dashboard, Prompt Optimizer, Context Exporter).
-   - **Category:** Select "Developer Tools" or "Productivity".
-   - **Language:** English (or your preferred default).
-   - **Icons & Screenshots:** Upload standard promotional images/screenshots of the extension in action. (Google requires at least one 1280x800 or 640x400 screenshot).
-4. **Privacy / Single Purpose:** Explain that Eskay requires storage and access to `https://claude.ai/*` specifically to read session usage metrics and inject the local optimizer toolbar. Mention that all operations are 100% client-side with no external servers.
-5. Submit for Review! Review times typically range from a few hours to a few days.
 
 ---
 
-## 🔍 Local Verification Checklist
+## Verification & Testing
 
-To verify that Eskay is working perfectly locally:
-1. Go to `chrome://extensions/` and load the `eskay` directory as an **unpacked extension**.
-2. Navigate to `https://claude.ai/`.
-3. Start a conversation or select an existing one.
-4. Verify the **Eskay Toolbar** renders properly underneath/adjacent to the chat input area.
-5. Check that the **Session**, **Weekly**, and **Context** meters load their status.
-6. Type a message in the input box, click **Optimize** (toggle between *Minimize Tokens* and *Max Efficiency*), and check if the prompt compression/templating works and updates the token delta display.
-7. Click **Retrieve Context** and verify that a `MASTER_PROMPT.md` file downloads successfully with the full chat log appended. Verify that database records are created in IndexedDB. Type a query in a new chat, click **Recall Memory**, and check that relevant context is injected.
+- Load `eskay/eval/eval_runner.html` in your browser to run the LongMemEval vector recall and memory consolidation test suite.
+- Run `node test/persona-test-harness.js` and `node test/differential-tester.js` from the repository root.
 

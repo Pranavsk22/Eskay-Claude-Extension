@@ -22,6 +22,7 @@
         "memory/consolidate.js",
         "src/optimizer.js",
         "src/contextExporter.js",
+        "src/trajectoryVisualizer.js",
         "src/usageTracker.js",
         "src/ui.js",
         "src/content.js"

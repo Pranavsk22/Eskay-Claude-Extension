@@ -180,6 +180,9 @@
   }
 
   async function getEmbedding(text) {
+    if (window.EskayVectorStore && typeof window.EskayVectorStore.getEmbedding === 'function') {
+      return window.EskayVectorStore.getEmbedding(text);
+    }
     const dimensions = 384;
     const vector = new Array(dimensions).fill(0);
     const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
@@ -515,6 +518,18 @@
         }
       }
 
+      // Automatically run memory consolidation pass to merge near-duplicates (>0.85 similarity)
+      if (window.EskayConsolidator && typeof window.EskayConsolidator.consolidate === 'function') {
+        try {
+          const pruned = await window.EskayConsolidator.consolidate();
+          if (pruned > 0) {
+            console.log(`Eskay: Consolidated memory store, pruned ${pruned} redundant record(s).`);
+          }
+        } catch (cErr) {
+          console.warn("Eskay: auto-consolidation warning:", cErr);
+        }
+      }
+
       // --- RENDER MD VIEW FROM SAVED RECORDS ---
       const goals = candidateRecords.filter(r => r.type === 'goal').map(r => r.text);
       const accomplished = candidateRecords.filter(r => r.type === 'decision').map(r => r.text);
@@ -595,6 +610,28 @@ ${fullChatHistoryText}
           window.EskayUI.showToast("Failed to download MASTER_PROMPT.md.");
         }
       }
+    },
+
+    getTrajectoryData() {
+      let messages = null;
+      let source = 'none';
+      if (activeConversationData) {
+        try {
+          messages = parseConversationFromTree(activeConversationData);
+          if (messages && messages.length > 0) source = 'tree';
+        } catch (e) {
+          console.warn("Eskay: tree parse fallback", e);
+        }
+      }
+      if (!messages || messages.length === 0) {
+        messages = scrapeConversationFromDOM();
+        if (messages && messages.length > 0) source = 'dom';
+      }
+      return {
+        messages: messages || [],
+        source,
+        extractedAt: new Date().toISOString()
+      };
     }
   };
 

@@ -1,57 +1,125 @@
-# 🌟 Eskay — Claude.ai Usage Dashboard & Prompt Optimizer
+# Eskay — Claude.ai Usage Dashboard & Prompt Optimization Platform
 
-Eskay is a premium browser extension and userscript designed specifically for **Claude.ai**. It helps you prevent token waste, eliminate limit blindness, safeguard conversation context, and maximize prompt engineering efficiency — all running 100% locally in your browser.
-
----
-
-## 🚀 Quick Download & Installation
-
-### Option 1: Chrome / Edge / Brave Extension (Recommended)
-Get the pre-packaged extension directly and load it into your browser:
-
-1. **[Click here to download eskay.zip](https://github.com/Pranavsk22/Eskay-Claude-Extension/raw/main/eskay.zip)**.
-2. Extract the downloaded `eskay.zip` folder onto your computer.
-3. Open your browser's extensions management page:
-   - **Chrome / Brave / Opera:** Navigate to `chrome://extensions/`
-   - **Edge:** Navigate to `edge://extensions/`
-4. Toggle on **Developer mode** (usually in the upper-right corner).
-5. Click **Load unpacked** (in the top-left corner).
-6. Select the extracted `eskay` folder (the directory containing `manifest.json`).
-7. Open or refresh `https://claude.ai` to start using Eskay!
+Eskay is a privacy-first browser extension and userscript engineered specifically for **Claude.ai**. It prevents context window overflow, eliminates usage limit surprises, optimizes prompts via a domain-routing engine, and maintains an episodic, vector-backed memory layer across chat sessions — running 100% locally in your browser with zero external dependencies.
 
 ---
 
-### Option 2: Greasemonkey / Tampermonkey Userscript
-If you prefer running it as a userscript:
+## Core Capabilities
 
-1. Install the [Tampermonkey](https://www.tampermonkey.net/) or Greasemonkey extension from your browser's web store.
-2. **[Click here to install eskay.user.js](https://github.com/Pranavsk22/Eskay-Claude-Extension/raw/main/eskay/userscript/eskay.user.js)** (Tampermonkey will automatically detect the script and prompt you to install it).
-3. Confirm the installation.
-4. Open or refresh `https://claude.ai`!
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             ESKAY CORE ENGINE                               │
+├──────────────────────────┬──────────────────────────┬───────────────────────┤
+│    Usage Dashboard       │     Prompt Optimizer     │   Episodic Memory     │
+├──────────────────────────┼──────────────────────────┼───────────────────────┤
+│ • 5h Rolling Session Bar │ • Minimise Tokens (NLP)  │ • 384-d Feature Hash  │
+│ • 7d Rolling Weekly Bar  │ • Maximise Efficiency    │ • IndexedDB Storage   │
+│ • 200k Context Counter   │ • 49-Persona Routing     │ • Cosine Top-5 Recall │
+│ • Ephemeral Cache Timer  │ • Reasoning Toggles      │ • Auto-Consolidation  │
+└──────────────────────────┴──────────────────────────┴───────────────────────┘
+```
+
+### 1. Real-Time Usage & Context Dashboard
+* **5-Hour Rolling Session Quota**: Real-time progress bar displaying remaining message allocations and time elapsed inside the rolling window.
+* **7-Day Rolling Weekly Quota**: Tracks long-term message consumption and reset countdowns.
+* **Real-time BPE Context Window Counter**: Accurate token counting for active conversations against Claude's 200,000 token boundary, backed by $O(1)$ message-level SHA-256 fingerprint caching.
+* **Ephemeral Cache Timer**: 5-minute countdown tracking prompt cache validity to maximize cache-hit cost optimizations.
+* **Dynamic Warning States**: Visual threshold indicators dynamically shifting from Normal to Warning (>80%) and Critical (>95%).
+
+### 2. Dual-Engine Prompt Optimizer
+* **Minimise Tokens Mode**: Rule-based NLP compression pipeline that strips politeness fillers, meta-commentary, hedge phrases, and redundant sentence structures without altering intent or technical variables.
+* **Maximise Efficiency Mode**: Automatically routes incoming prompts through a multi-category intent classifier to inject the optimal persona from a matrix of **49 domain-expert personas** alongside structured output formats and reasoning triggers.
+* **Interactive Toggles**: Selectively enable clarification prompts, step-by-step reasoning chains, one-shot/multi-shot templates, and unglazed critique (Brutal mode).
+* **Live Token Delta Display**: Immediate visual feedback showing exact tokens saved or added before submission.
+
+### 3. Vector-Backed Persistent Memory & Consolidation
+* **Context Retrieval (`MASTER_PROMPT.md`)**: Scrapes the full conversation tree, extracts goals, decisions, constraints, next steps, and code artifacts, stores them in local IndexedDB vector storage, and downloads a clean handoff `.md` file.
+* **Memory Recall**: Computes local 384-dimensional embeddings of the active prompt, queries IndexedDB via cosine similarity, and prepends the top-5 most relevant past decisions and constraints into your active chat preamble.
+* **Automated Memory Consolidation**: Prunes near-duplicate records (cosine similarity > 0.85) on export, preserving the newest record timestamp to prevent memory bloating.
+* **Trajectory Visualizer & Debugger**: An interactive timeline inspector allowing developers to review conversation branches, extracted knowledge entities, and code artifacts before generating handoff summaries.
 
 ---
 
-## ✨ Features
+## Architecture & System Flow
 
-### 1. Claude.ai Usage Dashboard
-* **5-Hour Rolling Session Quota:** Visually tracks remaining messages and counts down the exact time until your quota resets.
-* **7-Day Rolling Weekly Quota:** Displays long-term message consumption and tracks reset times.
-* **Real-time Context Window Counter:** Counts BPE tokens for your active chat window to prevent exceeding Claude's 200k token limit.
-* **Ephemeral Cache Timer:** Tracks prompt caching lifetimes with a 5-minute countdown to help you leverage Claude's caching optimizations.
-* **Utilization Alert States:** Indicators dynamically shift colors from **Orange** to **Amber (>80%)** and **Red (>95%)** based on your consumption.
+```
+[Claude.ai SPA] ──► [inject.js (Main World)] ──(postMessage)──► [content.js (Extension World)]
+                            │                                                │
+                 Interceps fetch/SSE streams                        Updates UI, Tokenizer &
+                 Usage limits & JSON trees                          IndexedDB Vector Store
+```
 
-### 2. Prompt Optimizer (Toolbar)
-Directly integrated below the Claude input area, offering two powerful optimization modes:
-* **Minimize Tokens:** NLP-based compression that strips filler words, hedges, pronouns, and redundant phrase structures to save prompt tokens without changing the core meaning.
-* **Max Efficiency:** Enriches your prompt with curated, domain-specific expert personas, output formats, reasoning triggers, and custom rules.
-* **Interactive Modifiers:** Easily toggle individual prompt options (like *One-Shot Examples*, *Brutal Critique*, or *Chain of Thought*) with real-time token delta displays.
-
-### 3. Context Retrieval & Persistent Memory
-* Click **Retrieve Context** in the toolbar to scrape all messages, code blocks, and attachments in your active chat. It automatically chunks the conversation into structured memory records, computes client-side vector embeddings, and saves them to local browser storage (`IndexedDB`). It also downloads a clean, structured `.md` handoff document featuring the full chronological chat log, allowing you to resume work seamlessly.
-* Click **Memory Recall** in any new chat window to query the vector store via cosine similarity and automatically inject the top-5 most relevant past goals, decisions, and constraints into your active prompt preamble, establishing a persistent memory loop. Read the [Memory Architecture](MEMORY-ARCHITECTURE.md) document to learn more about the design rationale.
+All vector calculations, text processing, and data persistence execute strictly on the client CPU. No prompt data, tokens, or conversation logs are ever transmitted to third-party endpoints.
 
 ---
 
-## 🔒 Privacy & Safety
-* **100% Client-Side:** Eskay runs completely in your browser. No prompt data, tokens, or conversation history are ever transmitted to external servers.
-* **Zero External Dependencies:** No analytical trackers or third-party libraries are loaded, ensuring absolute data privacy.
+## Test & Evaluation Rigor
+
+Eskay enforces automated regression suites and evaluation harnesses before any build is merged:
+
+| Test Harness | Target / Metric | Description |
+| :--- | :--- | :--- |
+| `persona-test-harness.js` | $\ge 90\%$ Domain Accuracy | Evaluates domain and persona routing accuracy across 33+ labeled cases. |
+| `intent-test-runner.js` | $\ge 90\%$ Intent Accuracy | Disambiguation test runner evaluating polysemous prompt terms (e.g. resume, design, model). |
+| `differential-tester.js` | Automated Mode Diffing | Differential testing framework diffing token compression, persona selection, and routing stability across modes. |
+| `consolidation-test-runner.js` | 100% Pruning Verification | Validates cosine near-duplicate detection (>0.85) and timestamp retention. |
+| `recall_eval.js` (LongMemEval) | $\ge 80\%$ Retrieval Pass Rate | Multi-session retrieval benchmark verifying top-1 cosine recall of stored facts and categories. |
+
+To run the automated test suite locally:
+```bash
+# Run persona routing accuracy gate
+node test/persona-test-harness.js
+
+# Run intent disambiguation test runner
+node test/intent-test-runner.js
+
+# Run differential testing framework
+node test/differential-tester.js
+
+# Run memory consolidation verification
+node test/consolidation-test-runner.js
+```
+
+---
+
+## Installation Guide
+
+### Option 1: Chrome, Brave, Edge Extension (Recommended)
+
+1. Clone or download this repository.
+2. Open your browser extension settings:
+   - **Chrome / Brave:** `chrome://extensions/`
+   - **Edge:** `edge://extensions/`
+3. Enable **Developer mode** (toggle in upper right).
+4. Click **Load unpacked** (top left).
+5. Select the `eskay` folder (the directory containing `manifest.json`).
+6. Navigate to `https://claude.ai` to begin using Eskay.
+
+### Option 2: Tampermonkey Userscript
+
+1. Install the [Tampermonkey](https://www.tampermonkey.net/) extension.
+2. Create a new script in Tampermonkey and paste the contents of `eskay/userscript/eskay.user.js`.
+3. Save the script and refresh `https://claude.ai`.
+
+---
+
+## Interactive Trajectory Inspection Tool
+
+Eskay includes a standalone visualizer tool for inspecting scraped trajectories, debugging agent execution trees, and reviewing `MASTER_PROMPT.md` handoffs:
+
+1. Open `trajectory_viewer.html` in any web browser.
+2. Drag and drop any exported `MASTER_PROMPT.md` file or click **Load Sample Trajectory** to explore the conversation turn-by-turn.
+
+---
+
+## Privacy & Security
+
+* **Zero Network Calls**: All memory indexing, vector search, and NLP transformations run in-browser.
+* **Local Storage Only**: Memory records and conversation snapshots are stored strictly in client-side IndexedDB.
+* **No Telemetry**: No tracking pixels, third-party CDNs, or external telemetry scripts.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

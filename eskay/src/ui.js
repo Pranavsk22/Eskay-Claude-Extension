@@ -498,8 +498,11 @@
             <input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context
           </label>
           <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; border-top: 1px solid var(--cb-border); padding-top: 8px; font-size: 11px;">
-            <span style="color: var(--cb-text-muted);">Memory Management:</span>
-            <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and prune old memories">🧹 Clean Memory</button>
+            <span style="color: var(--cb-text-muted);">Inspection & Memory:</span>
+            <div style="display: flex; gap: 6px;">
+              <button class="ek-btn-clean" id="ek-btn-trajectory" title="Inspect conversation trajectory and structured chunks" style="background-color: rgba(124, 58, 237, 0.15) !important; color: #A78BFA !important; border-color: rgba(124, 58, 237, 0.3) !important;">Trajectory</button>
+              <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and consolidate near-duplicate memories">Consolidate</button>
+            </div>
           </div>
         </div>
 
@@ -646,6 +649,17 @@
           this.handleMemoryClean();
         });
       }
+
+      const btnTrajectory = document.getElementById('ek-btn-trajectory');
+      if (btnTrajectory) {
+        btnTrajectory.addEventListener('click', () => {
+          if (window.EskayTrajectoryVisualizer) {
+            window.EskayTrajectoryVisualizer.showModal();
+          } else if (window.EskayUI) {
+            window.EskayUI.showToast("Trajectory Visualizer loading...");
+          }
+        });
+      }
       
       // Clicking the dashboard triggers a refresh of usage
       const dashboard = document.querySelector('.ek-dashboard');
@@ -670,6 +684,9 @@
       }
 
       function getLocalEmbedding(text) {
+        if (window.EskayVectorStore && typeof window.EskayVectorStore.getEmbedding === 'function') {
+          return window.EskayVectorStore.getEmbedding(text);
+        }
         const dimensions = 384;
         const vector = new Array(dimensions).fill(0);
         const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
@@ -734,7 +751,7 @@
       } catch (err) {
         console.error("Eskay memory recall failed:", err);
         if (window.EskayUI) {
-          window.EskayUI.showToast("Memory recall failed: AI model loading error.");
+          window.EskayUI.showToast("Memory recall failed: Vector calculation error.");
         }
       }
     },

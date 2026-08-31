@@ -143,6 +143,35 @@
     });
   }
 
+  function getEmbedding(text) {
+    const dimensions = 384;
+    const vector = new Array(dimensions).fill(0);
+    const words = (text || "").toLowerCase().match(/\b\w+\b/g) || [];
+    
+    if (words.length === 0) return vector;
+    
+    words.forEach(word => {
+      let hash = 0;
+      for (let i = 0; i < word.length; i++) {
+        hash = (hash * 31 + word.charCodeAt(i)) | 0;
+      }
+      const index = Math.abs(hash) % dimensions;
+      vector[index] += 1;
+    });
+    
+    let magnitude = 0;
+    for (let i = 0; i < dimensions; i++) {
+      magnitude += vector[i] * vector[i];
+    }
+    magnitude = Math.sqrt(magnitude);
+    if (magnitude > 0) {
+      for (let i = 0; i < dimensions; i++) {
+        vector[i] /= magnitude;
+      }
+    }
+    return vector;
+  }
+
   const storeExport = {
     initDB,
     saveRecord,
@@ -150,12 +179,14 @@
     getRecordsBySession,
     deleteRecord,
     search,
-    cosineSimilarity
+    cosineSimilarity,
+    getEmbedding
   };
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = storeExport;
-  } else {
+  }
+  if (typeof window !== 'undefined') {
     window.EskayVectorStore = storeExport;
   }
 })();
