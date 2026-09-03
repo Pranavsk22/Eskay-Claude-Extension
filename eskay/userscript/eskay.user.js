@@ -3022,7 +3022,7 @@ ${fullChatHistoryText}
 
   // --- 7. UI Manager ---
   let isOptionsOpen = false;
-  let isStatsOpen = true;
+  let isStatsOpen = false;
   let isMinimized = false;
   let isFloating = false;
 
@@ -3388,43 +3388,50 @@ ${fullChatHistoryText}
 
     findChatInputCard() {
       const inputEl = document.querySelector('[contenteditable="true"], textarea');
-      if (inputEl) {
-        let cur = inputEl;
-        while (cur && cur !== document.body) {
-          const parent = cur.parentElement;
-          if (!parent || parent === document.body) break;
+      if (!inputEl) return null;
 
-          const hasButtons = cur.querySelectorAll && cur.querySelectorAll('button').length >= 2;
-          const isCardWrapper = cur.tagName === 'FIELDSET' || 
-                                cur.tagName === 'FORM' ||
-                                cur.getAttribute('data-testid') === 'chat-input-container' ||
-                                cur.classList.contains('chat-input-wrapper');
+      // Find the true outermost container of the chat card.
+      // We traverse all the way up to find the top-level card element before reaching <main> or document.body.
+      let outermostCard = null;
+      let cur = inputEl.parentElement;
 
-          if (isCardWrapper || (hasButtons && cur.querySelector('[contenteditable="true"], textarea'))) {
-            return cur;
-          }
-          cur = parent;
+      while (cur && cur !== document.body && cur.tagName !== 'MAIN') {
+        const isFieldset = cur.tagName === 'FIELDSET';
+        const isForm = cur.tagName === 'FORM';
+        const buttons = cur.querySelectorAll ? cur.querySelectorAll('button') : [];
+        const hasButtons = buttons.length >= 2;
+        const isCardStyled = cur.classList.contains('rounded-2xl') || 
+                             cur.classList.contains('rounded-3xl') || 
+                             cur.classList.contains('rounded-xl') ||
+                             cur.classList.contains('border') ||
+                             cur.getAttribute('data-testid') === 'chat-input-container' ||
+                             cur.classList.contains('chat-input-wrapper');
+
+        if ((isFieldset || isForm || isCardStyled) && hasButtons) {
+          outermostCard = cur;
         }
 
-        const fieldset = inputEl.closest('fieldset');
-        if (fieldset) return fieldset;
-        const form = inputEl.closest('form');
-        if (form) return form;
-        return inputEl.parentElement?.parentElement || inputEl.parentElement;
+        cur = cur.parentElement;
       }
 
-      const dropdown = document.querySelector('[data-testid="model-selector-dropdown"]');
-      if (dropdown) {
-        let cur = dropdown;
-        while (cur && cur !== document.body) {
-          if (cur.querySelector('[contenteditable="true"], textarea')) {
-            return cur;
-          }
-          cur = cur.parentElement;
+      if (outermostCard) return outermostCard;
+
+      // Fallback: check closest fieldset or form
+      const fieldset = inputEl.closest('fieldset');
+      if (fieldset) return fieldset;
+      const form = inputEl.closest('form');
+      if (form) return form;
+
+      // Fallback: outermost wrapper before body that contains multiple buttons
+      let node = inputEl;
+      while (node.parentElement && node.parentElement !== document.body && node.parentElement.tagName !== 'MAIN') {
+        if (node.parentElement.querySelectorAll('button').length >= 2) {
+          outermostCard = node.parentElement;
         }
+        node = node.parentElement;
       }
 
-      return null;
+      return outermostCard || inputEl.parentElement?.parentElement || inputEl.parentElement;
     },
 
     attachHeader() {
