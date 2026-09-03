@@ -26,6 +26,7 @@
       --cb-text-muted: #9CA3AF;
       --cb-bg-hover: rgba(255, 255, 255, 0.06);
     }
+
     .ek-header-container {
       display: flex;
       align-items: center;
@@ -33,53 +34,143 @@
       font-family: 'Fira Code', 'Courier New', monospace;
       font-size: 11px;
       color: var(--cb-text-muted);
-      padding: 6px 12px;
-      background-color: rgba(0, 0, 0, 0.15);
+      padding: 5px 10px;
+      background-color: rgba(0, 0, 0, 0.18);
       border: 1px solid var(--cb-border);
       border-radius: 8px;
       margin-left: 8px;
       white-space: nowrap;
+      user-select: none;
     }
+
     .ek-header-mini-bar {
       display: inline-block;
-      width: 40px;
+      width: 36px;
       height: 4px;
-      background-color: rgba(255, 255, 255, 0.05);
+      background-color: rgba(255, 255, 255, 0.06);
       border-radius: 2px;
       overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.2);
+      border: 1px solid rgba(0, 0, 0, 0.2);
       vertical-align: middle;
     }
+
     .ek-header-mini-bar-fill {
       height: 100%;
       background-color: var(--cb-orange);
       border-radius: 2px;
     }
+
     .ek-header-cache-active {
       color: #10B981;
       font-weight: 600;
     }
+
     #eskay-toolbar {
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--cb-surface);
       border: 1px solid var(--cb-border);
       border-radius: 12px;
-      padding: 12px 16px;
-      margin-top: 8px;
+      padding: 10px 14px;
+      margin-top: 0;
       margin-bottom: 8px;
       color: var(--cb-text);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       font-size: 13px;
       user-select: none;
-      backdrop-filter: blur(10px);
-      transition: all 0.3s ease;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       width: 100%;
       box-sizing: border-box;
       flex-shrink: 0;
+      position: relative;
+      z-index: 10;
     }
+
+    #eskay-toolbar.ek-minimized {
+      padding: 5px 12px;
+      border-radius: 20px;
+      width: fit-content;
+      max-width: 100%;
+      margin-top: 0;
+      margin-bottom: 6px;
+      gap: 0;
+      cursor: pointer;
+      background: rgba(26, 26, 25, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    #eskay-toolbar.ek-minimized:hover {
+      border-color: rgba(232, 114, 28, 0.5);
+      background: rgba(36, 36, 35, 0.98);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    #eskay-toolbar.ek-minimized .ek-full-toolbar {
+      display: none !important;
+    }
+
+    #eskay-toolbar:not(.ek-minimized) .ek-minimized-bar {
+      display: none !important;
+    }
+
+    .ek-minimized-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--cb-text);
+      white-space: nowrap;
+    }
+
+    .ek-minimized-meta {
+      color: var(--cb-text-muted);
+      font-family: 'Fira Code', monospace;
+      font-size: 10px;
+    }
+
+    .ek-minimized-expand-icon {
+      display: flex;
+      align-items: center;
+      color: var(--cb-text-muted);
+      margin-left: 4px;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .ek-minimized-bar:hover .ek-minimized-expand-icon {
+      color: var(--cb-orange);
+      transform: translateY(-1px);
+    }
+
+    #eskay-toolbar.ek-floating {
+      position: fixed !important;
+      top: 72px;
+      right: 24px;
+      width: 380px;
+      max-width: calc(100vw - 48px);
+      z-index: 9990 !important;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+      border-color: rgba(232, 114, 28, 0.25);
+      margin: 0 !important;
+    }
+
+    #eskay-toolbar.ek-floating.ek-minimized {
+      width: auto;
+      top: 72px;
+      right: 24px;
+    }
+
+    .ek-full-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
     .ek-header {
       display: flex;
       justify-content: space-between;
@@ -87,28 +178,72 @@
       flex-wrap: wrap;
       gap: 8px;
     }
+
     .ek-logo-group {
       display: flex;
       align-items: center;
       gap: 8px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
+      letter-spacing: 0.3px;
     }
+
     .ek-logo-dot {
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       background-color: var(--cb-orange);
       border-radius: 50%;
       display: inline-block;
       box-shadow: 0 0 8px var(--cb-orange);
       animation: ek-pulse 2s infinite ease-in-out;
     }
+
     @keyframes ek-pulse {
       0% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.2); opacity: 0.7; }
       100% { transform: scale(1); opacity: 1; }
     }
-    /* Coloured Premium Action Buttons */
+
+    .ek-header-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ek-tool-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--cb-border);
+      color: var(--cb-text-muted);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .ek-tool-pill:hover {
+      background: var(--cb-bg-hover);
+      color: var(--cb-text);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .ek-tool-pill.active {
+      background: rgba(232, 114, 28, 0.15);
+      border-color: rgba(232, 114, 28, 0.4);
+      color: var(--cb-orange);
+    }
+
+    .ek-tool-pill-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .ek-btn-minimize {
       background: linear-gradient(135deg, #7C3AED, #6D28D9) !important;
       border: 1px solid rgba(124, 58, 237, 0.4) !important;
@@ -117,16 +252,19 @@
       box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     .ek-btn-minimize:hover {
       background: linear-gradient(135deg, #8B5CF6, #7C3AED) !important;
       border-color: #8B5CF6 !important;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
     }
+
     .ek-btn-minimize:active {
       transform: translateY(0);
       box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
     }
+
     .ek-btn-maximize {
       background: linear-gradient(135deg, #E8721C, #D96216) !important;
       border: 1px solid rgba(232, 114, 28, 0.4) !important;
@@ -135,16 +273,19 @@
       box-shadow: 0 2px 6px rgba(232, 114, 28, 0.25);
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     .ek-btn-maximize:hover {
       background: linear-gradient(135deg, #F97316, #E8721C) !important;
       border-color: #F97316 !important;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(232, 114, 28, 0.4);
     }
+
     .ek-btn-maximize:active {
       transform: translateY(0);
       box-shadow: 0 2px 4px rgba(232, 114, 28, 0.2);
     }
+
     .ek-btn-retrieve {
       background-color: rgba(255, 255, 255, 0.06) !important;
       border: 1px solid var(--cb-border) !important;
@@ -152,14 +293,17 @@
       font-weight: 500 !important;
       transition: all 0.2s ease;
     }
+
     .ek-btn-retrieve:hover {
       background-color: rgba(255, 255, 255, 0.12) !important;
       border-color: rgba(255, 255, 255, 0.2) !important;
       transform: translateY(-1px);
     }
+
     .ek-btn-retrieve:active {
       transform: translateY(0);
     }
+
     .ek-btn-recall {
       background-color: rgba(16, 185, 129, 0.1) !important;
       border: 1px solid rgba(16, 185, 129, 0.3) !important;
@@ -167,14 +311,17 @@
       font-weight: 500 !important;
       transition: all 0.2s ease;
     }
+
     .ek-btn-recall:hover {
       background-color: rgba(16, 185, 129, 0.2) !important;
       border-color: rgba(16, 185, 129, 0.5) !important;
       transform: translateY(-1px);
     }
+
     .ek-btn-recall:active {
       transform: translateY(0);
     }
+
     .ek-btn-clean {
       background-color: rgba(239, 68, 68, 0.1) !important;
       border: 1px solid rgba(239, 68, 68, 0.3) !important;
@@ -186,87 +333,88 @@
       cursor: pointer !important;
       transition: all 0.2s ease;
     }
+
     .ek-btn-clean:hover {
       background-color: rgba(239, 68, 68, 0.2) !important;
       border-color: rgba(239, 68, 68, 0.5) !important;
       transform: translateY(-1px);
     }
+
     .ek-btn-clean:active {
       transform: translateY(0);
     }
+
     .ek-actions-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 10px;
+      padding-top: 8px;
       flex-wrap: wrap;
       gap: 8px;
     }
+
     .ek-buttons {
       display: flex;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
     }
+
     .ek-btn {
       background-color: var(--cb-bg-hover);
       border: 1px solid var(--cb-border);
       color: var(--cb-text);
-      padding: 7px 16px;
-      border-radius: 20px;
+      padding: 6px 14px;
+      border-radius: 18px;
       cursor: pointer;
       font-size: 12px;
       font-weight: 500;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       transition: all 0.2s ease;
     }
+
     .ek-btn:hover {
       background-color: rgba(255, 255, 255, 0.1);
       border-color: rgba(255, 255, 255, 0.2);
     }
+
     .ek-delta {
       font-family: 'Fira Code', 'Courier New', monospace;
       font-size: 11px;
       font-weight: 600;
       color: #10B981;
       background-color: rgba(16, 185, 129, 0.1);
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
       border: 1px solid rgba(16, 185, 129, 0.2);
       display: none;
+      animation: ek-fade-in 0.3s ease;
     }
-    .ek-toggle-sub {
-      background: none;
-      border: none;
-      color: var(--cb-text-muted);
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
+
+    @keyframes ek-fade-in {
+      from { opacity: 0; transform: translateY(2px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .ek-toggle-sub:hover {
-      background-color: var(--cb-bg-hover);
-      color: var(--cb-text);
-    }
-    .ek-toggle-sub svg {
-      transition: transform 0.2s ease;
-    }
-    .ek-toggle-sub.open svg {
-      transform: rotate(180deg);
-    }
+
     .ek-sub-panel {
       display: none;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 8px 16px;
-      background-color: rgba(0, 0, 0, 0.15);
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 6px 14px;
+      background-color: rgba(0, 0, 0, 0.2);
       border-radius: 8px;
-      padding: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.03);
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      animation: ek-slide-down 0.2s ease-out;
     }
+
+    @keyframes ek-slide-down {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .ek-checkbox-label {
       display: flex;
       align-items: center;
@@ -275,52 +423,61 @@
       font-size: 11px;
       color: var(--cb-text-muted);
       transition: color 0.2s ease;
+      user-select: none;
     }
+
     .ek-checkbox-label:hover {
       color: var(--cb-text);
     }
+
     .ek-checkbox-label input {
       cursor: pointer;
       accent-color: var(--cb-orange);
     }
+
     .ek-dashboard {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 10px;
-      cursor: pointer;
+      padding-top: 8px;
     }
+
     .ek-bar-row {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
+
     .ek-bar-header {
       display: flex;
       justify-content: space-between;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
       color: var(--cb-text-muted);
     }
+
     .ek-bar-label {
       font-family: 'Fira Code', 'Courier New', monospace;
       font-weight: 600;
       font-size: 10px;
       letter-spacing: 0.5px;
     }
+
     .ek-bar-meta {
       font-family: 'Fira Code', 'Courier New', monospace;
       font-size: 10px;
     }
+
     .ek-bar-outer {
       position: relative;
-      height: 6px;
+      height: 5px;
       background-color: rgba(255, 255, 255, 0.05);
       border-radius: 3px;
       overflow: visible;
       border: 1px solid rgba(0, 0, 0, 0.2);
     }
+
     .ek-bar-inner {
       height: 100%;
       width: 0%;
@@ -328,45 +485,90 @@
       border-radius: 3px;
       transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
     }
+
     .ek-bar-inner.warning {
       background-color: var(--cb-amber);
       box-shadow: 0 0 4px var(--cb-amber);
     }
+
     .ek-bar-inner.critical {
       background-color: var(--cb-red);
       box-shadow: 0 0 6px var(--cb-red);
     }
+
     .ek-bar-marker {
       position: absolute;
       top: -3px;
       width: 2px;
-      height: 12px;
+      height: 11px;
       background-color: #fff;
-      box-shadow: 0 0 4px rgba(255,255,255,0.8);
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
       pointer-events: none;
       transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       display: none;
     }
-    .ek-cache-timer {
-      font-family: 'Fira Code', 'Courier New', monospace;
-      font-size: 10px;
-      color: var(--cb-text-muted);
-      display: flex;
+
+    .ek-brutal-switch-container {
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 2px;
+      gap: 7px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--cb-text-muted);
+      position: relative;
+      transition: opacity 0.2s ease;
     }
-    .ek-cache-timer-dot {
-      width: 6px;
-      height: 6px;
+
+    .ek-brutal-switch-container:hover {
+      color: var(--cb-text);
+    }
+
+    .ek-brutal-switch-label {
+      font-size: 11px;
+    }
+
+    .ek-brutal-checkbox {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .ek-brutal-slider {
+      width: 30px;
+      height: 16px;
+      background-color: rgba(255, 255, 255, 0.15);
+      border: 1px solid var(--cb-border);
+      border-radius: 9px;
+      position: relative;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .ek-brutal-slider::before {
+      content: "";
+      position: absolute;
+      height: 10px;
+      width: 10px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #fff;
       border-radius: 50%;
-      background-color: #9CA3AF;
-      display: inline-block;
+      transition: transform 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
-    .ek-cache-timer-dot.active {
-      background-color: #10B981;
-      box-shadow: 0 0 4px #10B981;
+
+    .ek-brutal-checkbox:checked + .ek-brutal-slider {
+      background-color: var(--cb-red);
+      border-color: rgba(239, 68, 68, 0.4);
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
     }
+
+    .ek-brutal-checkbox:checked + .ek-brutal-slider::before {
+      transform: translateX(14px);
+    }
+
     .ek-tooltip {
       position: absolute;
       z-index: 100001;
@@ -384,6 +586,7 @@
       line-height: 1.4;
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
+
     .ek-toast {
       position: fixed;
       bottom: 24px;
@@ -404,156 +607,136 @@
       backdrop-filter: blur(8px);
       animation: ek-toast-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
     @keyframes ek-toast-slide {
       from { opacity: 0; transform: translateY(20px) scale(0.95); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
+
     .ek-toast-fadeout {
       animation: ek-toast-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
     @keyframes ek-toast-fade {
       from { opacity: 1; transform: translateY(0) scale(1); }
       to { opacity: 0; transform: translateY(-10px) scale(0.95); }
     }
 
-    /* Light Mode Overrides */
     #eskay-toolbar.ek-light-mode {
       background-color: #FFFFFF !important;
       border-color: rgba(0, 0, 0, 0.1) !important;
       color: #000000 !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
     }
-    #eskay-toolbar.ek-light-mode .ek-logo-group {
+
+    #eskay-toolbar.ek-light-mode .ek-logo-group,
+    #eskay-toolbar.ek-light-mode .ek-minimized-bar {
       color: #000000 !important;
     }
+
+    #eskay-toolbar.ek-light-mode .ek-minimized-meta {
+      color: #4B5563 !important;
+    }
+
+    #eskay-toolbar.ek-light-mode .ek-tool-pill {
+      background: rgba(0, 0, 0, 0.04) !important;
+      border-color: rgba(0, 0, 0, 0.1) !important;
+      color: #374151 !important;
+    }
+
+    #eskay-toolbar.ek-light-mode .ek-tool-pill:hover {
+      background: rgba(0, 0, 0, 0.08) !important;
+      color: #000000 !important;
+    }
+
+    #eskay-toolbar.ek-light-mode .ek-tool-pill.active {
+      background: #FFEDD5 !important;
+      border-color: #FDBA74 !important;
+      color: #C2410C !important;
+    }
+
     #eskay-toolbar.ek-light-mode .ek-sub-panel {
       background-color: rgba(0, 0, 0, 0.03) !important;
-      border-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.06) !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-bar-outer {
-      background-color: rgba(0, 0, 0, 0.05) !important;
+      background-color: rgba(0, 0, 0, 0.06) !important;
       border-color: rgba(0, 0, 0, 0.08) !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-bar-header,
     #eskay-toolbar.ek-light-mode .ek-checkbox-label {
-      color: #000000 !important;
+      color: #1F2937 !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-checkbox-label:hover {
       color: #000000 !important;
     }
-    #eskay-toolbar.ek-light-mode .ek-toggle-sub {
-      color: #000000 !important;
-    }
-    #eskay-toolbar.ek-light-mode .ek-toggle-sub:hover {
-      background-color: rgba(0, 0, 0, 0.04) !important;
-      color: #000000 !important;
-    }
+
     #eskay-toolbar.ek-light-mode .ek-delta {
       color: #047857 !important;
-      background-color: rgba(16, 185, 129, 0.1) !important;
-      border-color: rgba(16, 185, 129, 0.2) !important;
+      background-color: rgba(16, 185, 129, 0.12) !important;
+      border-color: rgba(16, 185, 129, 0.25) !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn {
       color: #000000 !important;
       border-color: rgba(0, 0, 0, 0.12) !important;
       font-weight: 600 !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn-minimize {
       background: #F3E8FF !important;
       border-color: #C084FC !important;
+      color: #581C87 !important;
       box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1);
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn-minimize:hover {
       background: #E9D5FF !important;
       border-color: #A855F7 !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn-maximize {
       background: #FFEDD5 !important;
       border-color: #FDBA74 !important;
+      color: #7C2D12 !important;
       box-shadow: 0 1px 3px rgba(232, 114, 28, 0.1);
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn-maximize:hover {
       background: #FED7AA !important;
       border-color: #F97316 !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn-retrieve {
       background-color: #F3F4F6 !important;
       border-color: #D1D5DB !important;
+      color: #1F2937 !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-btn-retrieve:hover {
       background-color: #E5E7EB !important;
       border-color: #9CA3AF !important;
     }
 
-    /* Brutal Mode Switch Styles */
-    .ek-brutal-switch-container {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--cb-text-muted);
-      margin-left: 12px;
-      position: relative;
-      transition: opacity 0.2s ease;
-    }
-    .ek-brutal-switch-container:hover {
-      color: var(--cb-text);
-    }
-    .ek-brutal-switch-label {
-      font-size: 11px;
-    }
-    .ek-brutal-checkbox {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-    .ek-brutal-slider {
-      width: 32px;
-      height: 18px;
-      background-color: rgba(255, 255, 255, 0.15);
-      border: 1px solid var(--cb-border);
-      border-radius: 9px;
-      position: relative;
-      transition: background-color 0.2s ease, border-color 0.2s ease;
-    }
     #eskay-toolbar.ek-light-mode .ek-brutal-slider {
       background-color: rgba(0, 0, 0, 0.1);
       border-color: rgba(0, 0, 0, 0.15);
     }
-    .ek-brutal-slider::before {
-      content: "";
-      position: absolute;
-      height: 12px;
-      width: 12px;
-      left: 2px;
-      bottom: 2px;
-      background-color: #fff;
-      border-radius: 50%;
-      transition: transform 0.2s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    }
+
     #eskay-toolbar.ek-light-mode .ek-brutal-slider::before {
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
-    .ek-brutal-checkbox:checked + .ek-brutal-slider {
-      background-color: var(--cb-red);
-      border-color: rgba(239, 68, 68, 0.4);
-      box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
-    }
-    .ek-brutal-checkbox:checked + .ek-brutal-slider::before {
-      transform: translateX(14px);
-    }
+
     #eskay-toolbar.ek-light-mode .ek-brutal-switch-container {
-      color: #000000 !important;
+      color: #1F2937 !important;
     }
+
     #eskay-toolbar.ek-light-mode .ek-brutal-checkbox:checked + .ek-brutal-slider {
       background-color: var(--cb-red) !important;
       border-color: var(--cb-red) !important;
-      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2) !important;
     }
   `;
   const styleEl = document.createElement('style');
@@ -2838,7 +3021,11 @@ ${fullChatHistoryText}
   };
 
   // --- 7. UI Manager ---
-  let isPanelOpen = false;
+  let isOptionsOpen = false;
+  let isStatsOpen = true;
+  let isMinimized = false;
+  let isFloating = false;
+
   let headerContainer = null;
   let headerDisplay = null;
   let lengthGroup = null;
@@ -3061,31 +3248,37 @@ ${fullChatHistoryText}
     }
   }
 
-  function formatTimeRemaining(ms) {
-    if (!ms || ms <= 0) return 'resets soon';
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
+  function formatSeconds(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function formatResetCountdown(timestampMs) {
+    const diffMs = timestampMs - Date.now();
+    if (diffMs <= 0) return '0s';
+    const totalSeconds = Math.floor(diffMs / 1000);
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+    const totalMinutes = Math.round(totalSeconds / 60);
+    if (totalMinutes < 60) return `${totalMinutes}m`;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours < 24) return `${hours}h ${minutes}m`;
     const days = Math.floor(hours / 24);
-    if (days > 0) return `resets in ${days}d ${hours % 24}h`;
-    const hh = String(hours % 24).padStart(2, '0');
-    const mm = String(minutes % 60).padStart(2, '0');
-    const ss = String(seconds % 60).padStart(2, '0');
-    return `resets in ${hh}:${mm}:${ss}`;
+    const remHours = hours % 24;
+    return `${days}d ${remHours}h`;
   }
 
   function updateRetrieveButtonState() {
     const btn = document.getElementById('ek-btn-retrieve');
     if (!btn) return;
-
-    const hasDataMessages = typeof EskayExporter !== 'undefined' &&
-      typeof EskayExporter.getActiveConversationData === 'function' &&
-      EskayExporter.getActiveConversationData() &&
-      Array.isArray(EskayExporter.getActiveConversationData().chat_messages) &&
-      EskayExporter.getActiveConversationData().chat_messages.some(m => m.sender === 'human');
+    const hasDataMessages = window.EskayExporter &&
+      typeof window.EskayExporter.getActiveConversationData === 'function' &&
+      window.EskayExporter.getActiveConversationData() &&
+      Array.isArray(window.EskayExporter.getActiveConversationData().chat_messages) &&
+      window.EskayExporter.getActiveConversationData().chat_messages.some(m => m.sender === 'human');
 
     const hasDomMessages = !!document.querySelector('[data-testid="user-message"], .font-user');
-
     const inputEl = document.querySelector('[contenteditable="true"], textarea');
     const hasInputText = inputEl && (inputEl.innerText || inputEl.value || '').trim().length > 0;
 
@@ -3105,8 +3298,8 @@ ${fullChatHistoryText}
   function updateThemeClass() {
     const toolbar = document.getElementById('eskay-toolbar');
     if (!toolbar) return;
-
-    const isDark = document.documentElement.classList.contains('dark') ||
+    const isDark =
+      document.documentElement.classList.contains('dark') ||
       document.body.classList.contains('dark') ||
       (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -3156,15 +3349,16 @@ ${fullChatHistoryText}
 
   const EskayUI = {
     init() {
+      isMinimized = sessionStorage.getItem('eskay_ui_minimized') === 'true';
+      isFloating = sessionStorage.getItem('eskay_ui_floating') === 'true';
+      isOptionsOpen = sessionStorage.getItem('eskay_ui_options_open') === 'true';
+      isStatsOpen = sessionStorage.getItem('eskay_ui_stats_open') !== 'false';
+
       headerContainer = document.createElement('div');
       headerContainer.className = 'ek-header-container';
       headerDisplay = document.createElement('span');
       lengthGroup = document.createElement('span');
       lengthDisplay = document.createElement('span');
-      cachedDisplay = document.createElement('span');
-      lengthGroup.appendChild(lengthDisplay);
-      headerDisplay.appendChild(lengthGroup);
-      headerContainer.appendChild(headerDisplay);
 
       EskayUsageTracker.init();
       this.injectToolbar();
@@ -3191,20 +3385,48 @@ ${fullChatHistoryText}
       setupTooltip(lengthGroup, makeTooltip("Approximate tokens context window limit (200k).\nCache timer indicates active prompt caching."), { topOffset: 8 });
       setupTooltip(cachedDisplay, makeTooltip("Conversation context is actively cached by Claude."), { topOffset: 8 });
     },
-    findChatInputContainer() {
-      const dropdown = document.querySelector('[data-testid="model-selector-dropdown"]');
-      if (!dropdown) return null;
-      let cur = dropdown;
-      while (cur && cur !== document.body) {
-        const style = window.getComputedStyle(cur);
-        if (style.display === 'flex' && style.flexDirection === 'row') {
-          const buttons = cur.querySelectorAll('button');
-          if (buttons.length > 1) return cur;
+
+    findChatInputCard() {
+      const inputEl = document.querySelector('[contenteditable="true"], textarea');
+      if (inputEl) {
+        let cur = inputEl;
+        while (cur && cur !== document.body) {
+          const parent = cur.parentElement;
+          if (!parent || parent === document.body) break;
+
+          const hasButtons = cur.querySelectorAll && cur.querySelectorAll('button').length >= 2;
+          const isCardWrapper = cur.tagName === 'FIELDSET' || 
+                                cur.tagName === 'FORM' ||
+                                cur.getAttribute('data-testid') === 'chat-input-container' ||
+                                cur.classList.contains('chat-input-wrapper');
+
+          if (isCardWrapper || (hasButtons && cur.querySelector('[contenteditable="true"], textarea'))) {
+            return cur;
+          }
+          cur = parent;
         }
-        cur = cur.parentElement;
+
+        const fieldset = inputEl.closest('fieldset');
+        if (fieldset) return fieldset;
+        const form = inputEl.closest('form');
+        if (form) return form;
+        return inputEl.parentElement?.parentElement || inputEl.parentElement;
       }
-      return dropdown.parentElement;
+
+      const dropdown = document.querySelector('[data-testid="model-selector-dropdown"]');
+      if (dropdown) {
+        let cur = dropdown;
+        while (cur && cur !== document.body) {
+          if (cur.querySelector('[contenteditable="true"], textarea')) {
+            return cur;
+          }
+          cur = cur.parentElement;
+        }
+      }
+
+      return null;
     },
+
     attachHeader() {
       const chatMenu = document.querySelector('[data-testid="chat-menu-trigger"]');
       if (!chatMenu) return;
@@ -3213,11 +3435,8 @@ ${fullChatHistoryText}
       if (anchor.nextElementSibling !== headerContainer) { anchor.after(headerContainer); }
       this._renderHeader();
     },
-    injectToolbar() {
-      if (document.getElementById('eskay-toolbar')) return;
-      const container = this.findChatInputContainer();
-      if (!container) return;
 
+    createToolbarElement() {
       const toolbar = document.createElement('div');
       toolbar.id = 'eskay-toolbar';
 
@@ -3232,109 +3451,243 @@ ${fullChatHistoryText}
       const optBrutal = savedOpts.brutal ? 'checked' : '';
 
       toolbar.innerHTML = `
-        <div class="ek-header">
-          <div class="ek-logo-group"><span class="ek-logo-dot"></span><span>Eskay</span></div>
-          <button class="ek-toggle-sub ${isPanelOpen ? 'open' : ''}" id="ek-sub-toggle">
+        <!-- Minimized Pill View -->
+        <div class="ek-minimized-bar" id="ek-minimized-bar" title="Click to expand Eskay Controls">
+          <div class="ek-logo-group">
+            <span class="ek-logo-dot"></span>
+            <span>Eskay</span>
+          </div>
+          <span class="ek-minimized-meta" id="ek-minimized-meta">~0 tokens</span>
+          <span class="ek-delta" id="ek-minimized-delta" style="display: none;">−0 tokens saved</span>
+          <span class="ek-minimized-expand-icon">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-          </button>
+          </span>
         </div>
-        <div class="ek-sub-panel" id="ek-options-panel" style="display: ${isPanelOpen ? 'grid' : 'none'}">
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-clarify" ${optClarify}> 🧠 Ask clarification</label>
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-step" ${optStep}> 🔢 Step-by-step</label>
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-persona" ${optPersona}> 🎭 Set persona</label>
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-oneshot" ${optOneShot}> 📌 One-shot</label>
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-multishot" ${optMultiShot}> 🔁 Multi-shot</label>
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-format" ${optFormat}> 📐 Specify format</label>
-          <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context</label>
-          <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; border-top: 1px solid var(--cb-border); padding-top: 8px; font-size: 11px;">
-            <span style="color: var(--cb-text-muted);">Memory Management:</span>
-            <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and prune old memories">🧹 Clean Memory</button>
-          </div>
-        </div>
-        <div class="ek-actions-row">
-          <div class="ek-buttons">
-            <button class="ek-btn ek-btn-minimize" id="ek-btn-minimize">Minimise Tokens</button>
-            <button class="ek-btn ek-btn-maximize" id="ek-btn-maximize">Maximise Efficiency</button>
-            <label class="ek-brutal-switch-container">
-              <span class="ek-brutal-switch-label">Brutal Mode</span>
-              <input type="checkbox" id="ek-opt-brutal" class="ek-brutal-checkbox" ${optBrutal}>
-              <span class="ek-brutal-slider"></span>
-            </label>
-          </div>
-          <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
-            <button class="ek-btn ek-btn-recall" id="ek-btn-recall" title="Recall relevant memories for this prompt">🔍 Recall Memory</button>
-            <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" title="Index and export context">⬇ Retrieve Context</button>
-          </div>
-          <div class="ek-delta" id="ek-delta-display">−0 tokens saved</div>
-        </div>
-        <div class="ek-dashboard">
-          <div class="ek-bar-row" id="ek-row-session">
-            <div class="ek-bar-header"><span class="ek-bar-label">SESSION</span><span class="ek-bar-meta" id="ek-meta-session">0% used · resets soon</span></div>
-            <div class="ek-bar-outer">
-              <div class="ek-bar-inner" id="ek-bar-session" style="width: 0%"></div>
-              <div class="ek-bar-marker" id="ek-marker-session" style="left: 0%"></div>
+
+        <!-- Full Toolbar View -->
+        <div class="ek-full-toolbar" id="ek-full-toolbar">
+          <div class="ek-header">
+            <div class="ek-logo-group">
+              <span class="ek-logo-dot"></span>
+              <span>Eskay</span>
+              <div class="ek-delta" id="ek-delta-display">−0 tokens saved</div>
+            </div>
+            <div class="ek-header-tools">
+              <button class="ek-tool-pill ${isOptionsOpen ? 'active' : ''}" id="ek-btn-toggle-options" title="Toggle prompt sub-options & memory tools">
+                <span class="ek-tool-pill-icon">⚙</span>
+                <span>Options</span>
+              </button>
+              <button class="ek-tool-pill ${isStatsOpen ? 'active' : ''}" id="ek-btn-toggle-stats" title="Toggle usage statistics dashboard">
+                <span class="ek-tool-pill-icon">📊</span>
+                <span>Stats</span>
+              </button>
+              <button class="ek-tool-pill ${isFloating ? 'active' : ''}" id="ek-btn-toggle-float" title="Toggle floating companion mode">
+                <span class="ek-tool-pill-icon">📌</span>
+                <span id="ek-float-label">${isFloating ? 'Dock' : 'Float'}</span>
+              </button>
+              <button class="ek-tool-pill" id="ek-btn-minimize-toolbar" title="Collapse into mini pill">
+                <span class="ek-tool-pill-icon">−</span>
+              </button>
             </div>
           </div>
-          <div class="ek-bar-row" id="ek-row-weekly">
-            <div class="ek-bar-header"><span class="ek-bar-label">WEEKLY</span><span class="ek-bar-meta" id="ek-meta-weekly">0% used · resets soon</span></div>
-            <div class="ek-bar-outer">
-              <div class="ek-bar-inner" id="ek-bar-weekly" style="width: 0%"></div>
-              <div class="ek-bar-marker" id="ek-marker-weekly" style="left: 0%"></div>
+
+          <div class="ek-actions-row">
+            <div class="ek-buttons">
+              <button class="ek-btn ek-btn-minimize" id="ek-btn-minimize">Minimise Tokens</button>
+              <button class="ek-btn ek-btn-maximize" id="ek-btn-maximize">Maximise Efficiency</button>
+              <label class="ek-brutal-switch-container">
+                <span class="ek-brutal-switch-label">Brutal</span>
+                <input type="checkbox" id="ek-opt-brutal" class="ek-brutal-checkbox" ${optBrutal}>
+                <span class="ek-brutal-slider"></span>
+              </label>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+              <button class="ek-btn ek-btn-recall" id="ek-btn-recall" title="Recall relevant memories for this prompt">🔍 Recall</button>
+              <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" title="Index and export context">⬇ Export</button>
             </div>
           </div>
-          <div class="ek-bar-row" id="ek-row-context">
-            <div class="ek-bar-header"><span class="ek-bar-label">CONTEXT</span><span class="ek-bar-meta" id="ek-meta-context">~0 tokens · 0% of 200k</span></div>
-            <div class="ek-bar-outer">
-              <div class="ek-bar-inner" id="ek-bar-context" style="width: 0%"></div>
+
+          <div class="ek-sub-panel" id="ek-options-panel" style="display: ${isOptionsOpen ? 'grid' : 'none'}">
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-clarify" ${optClarify}> 🧠 Clarification</label>
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-step" ${optStep}> 🔢 Step-by-step</label>
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-persona" ${optPersona}> 🎭 Set persona</label>
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-oneshot" ${optOneShot}> 📌 One-shot</label>
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-multishot" ${optMultiShot}> 🔁 Multi-shot</label>
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-format" ${optFormat}> 📐 Specify format</label>
+            <label class="ek-checkbox-label"><input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context</label>
+            <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 6px; border-top: 1px solid var(--cb-border); padding-top: 6px; font-size: 11px;">
+              <span style="color: var(--cb-text-muted);">Memory Management:</span>
+              <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and consolidate memories">🧹 Consolidate</button>
+            </div>
+          </div>
+
+          <div class="ek-dashboard" id="ek-dashboard-panel" style="display: ${isStatsOpen ? 'flex' : 'none'}">
+            <div class="ek-bar-row" id="ek-row-session">
+              <div class="ek-bar-header"><span class="ek-bar-label">SESSION</span><span class="ek-bar-meta" id="ek-meta-session">0% used · resets soon</span></div>
+              <div class="ek-bar-outer">
+                <div class="ek-bar-inner" id="ek-bar-session" style="width: 0%"></div>
+                <div class="ek-bar-marker" id="ek-marker-session" style="left: 0%"></div>
+              </div>
+            </div>
+            <div class="ek-bar-row" id="ek-row-weekly">
+              <div class="ek-bar-header"><span class="ek-bar-label">WEEKLY</span><span class="ek-bar-meta" id="ek-meta-weekly">0% used · resets soon</span></div>
+              <div class="ek-bar-outer">
+                <div class="ek-bar-inner" id="ek-bar-weekly" style="width: 0%"></div>
+                <div class="ek-bar-marker" id="ek-marker-weekly" style="left: 0%"></div>
+              </div>
+            </div>
+            <div class="ek-bar-row" id="ek-row-context">
+              <div class="ek-bar-header"><span class="ek-bar-label">CONTEXT</span><span class="ek-bar-meta" id="ek-meta-context">~0 tokens · 0% of 200k</span></div>
+              <div class="ek-bar-outer">
+                <div class="ek-bar-inner" id="ek-bar-context" style="width: 0%"></div>
+              </div>
             </div>
           </div>
         </div>
       `;
-      const inputCard = container.parentNode;
-      if (inputCard) {
-        inputCard.style.flexShrink = '0';
+
+      return toolbar;
+    },
+
+    injectToolbar() {
+      let toolbar = document.getElementById('eskay-toolbar');
+      const shouldFloat = sessionStorage.getItem('eskay_ui_floating') === 'true';
+      const shouldMinimize = sessionStorage.getItem('eskay_ui_minimized') === 'true';
+
+      const isFirstCreation = !toolbar;
+      if (isFirstCreation) {
+        toolbar = this.createToolbarElement();
       }
-      if (inputCard && inputCard.parentNode) {
-        inputCard.parentNode.insertBefore(toolbar, inputCard.nextSibling);
+
+      if (shouldFloat) {
+        toolbar.classList.add('ek-floating');
+        if (toolbar.parentNode !== document.body) {
+          document.body.appendChild(toolbar);
+        }
       } else {
-        container.parentNode.insertBefore(toolbar, container.nextSibling);
+        toolbar.classList.remove('ek-floating');
+        const inputCard = this.findChatInputCard();
+        if (!inputCard || !inputCard.parentNode) return;
+
+        // Position toolbar cleanly ABOVE / BEFORE the input card
+        if (toolbar.nextSibling !== inputCard || toolbar.parentNode !== inputCard.parentNode) {
+          inputCard.parentNode.insertBefore(toolbar, inputCard);
+        }
       }
-      this.attachListeners();
 
-      setupTooltip(document.getElementById('ek-row-session'), makeTooltip("5-hour rolling usage.\nBar: message count used.\nLine: elapsed window time."), { topOffset: 8 });
-      setupTooltip(document.getElementById('ek-row-weekly'), makeTooltip("7-day rolling usage.\nBar: message count used.\nLine: elapsed window time."), { topOffset: 8 });
-      setupTooltip(document.getElementById('ek-row-context'), makeTooltip("Approximate BPE token count for current conversation.\nBar scale: 200k tokens context limit."), { topOffset: 8 });
-
-      const savedDelta = sessionStorage.getItem('eskay_last_saved_delta');
-      if (savedDelta) { this.updateDeltaDisplay(parseInt(savedDelta, 10)); }
-      this.updateUsageBars();
-      updateThemeClass();
-      updateRetrieveButtonState();
-      updateCheckboxDisableState();
-
-      const inputEl = document.querySelector('[contenteditable="true"], textarea');
-      const isEmpty = !inputEl || !(inputEl.innerText || inputEl.value || '').trim();
-      if (isEmpty) {
-        disableButton('ek-btn-minimize');
-        disableButton('ek-btn-maximize');
+      if (shouldMinimize) {
+        toolbar.classList.add('ek-minimized');
       } else {
-        enableButton('ek-btn-minimize');
-        enableButton('ek-btn-maximize');
+        toolbar.classList.remove('ek-minimized');
+      }
+
+      if (isFirstCreation) {
+        this.attachListeners();
+
+        setupTooltip(document.getElementById('ek-row-session'), makeTooltip("5-hour rolling usage.\nBar: message count used.\nLine: elapsed window time."), { topOffset: 8 });
+        setupTooltip(document.getElementById('ek-row-weekly'), makeTooltip("7-day rolling usage.\nBar: message count used.\nLine: elapsed window time."), { topOffset: 8 });
+        setupTooltip(document.getElementById('ek-row-context'), makeTooltip("Approximate BPE token count for current conversation.\nBar scale: 200k tokens context limit."), { topOffset: 8 });
+
+        const savedDelta = sessionStorage.getItem('eskay_last_saved_delta');
+        if (savedDelta) { this.updateDeltaDisplay(parseInt(savedDelta, 10)); }
+        this.updateUsageBars();
+        updateThemeClass();
+        updateRetrieveButtonState();
+        updateCheckboxDisableState();
+
+        const inputEl = document.querySelector('[contenteditable="true"], textarea');
+        const isEmpty = !inputEl || !(inputEl.innerText || inputEl.value || '').trim();
+        if (isEmpty) {
+          disableButton('ek-btn-minimize');
+          disableButton('ek-btn-maximize');
+        } else {
+          enableButton('ek-btn-minimize');
+          enableButton('ek-btn-maximize');
+        }
       }
     },
+
     attachListeners() {
-      document.getElementById('ek-sub-toggle').addEventListener('click', () => {
-        isPanelOpen = !isPanelOpen;
-        const panel = document.getElementById('ek-options-panel');
-        const btn = document.getElementById('ek-sub-toggle');
-        panel.style.display = isPanelOpen ? 'grid' : 'none';
-        if (isPanelOpen) btn.classList.add('open');
-        else btn.classList.remove('open');
-      });
-      document.getElementById('ek-btn-minimize').addEventListener('click', () => { this.handleOptimize('minimize'); });
-      document.getElementById('ek-btn-maximize').addEventListener('click', () => { this.handleOptimize('maximize'); });
+      const minimizedBar = document.getElementById('ek-minimized-bar');
+      if (minimizedBar) {
+        minimizedBar.addEventListener('click', () => {
+          isMinimized = false;
+          sessionStorage.setItem('eskay_ui_minimized', 'false');
+          const toolbar = document.getElementById('eskay-toolbar');
+          if (toolbar) toolbar.classList.remove('ek-minimized');
+        });
+      }
+
+      const btnMinimizeToolbar = document.getElementById('ek-btn-minimize-toolbar');
+      if (btnMinimizeToolbar) {
+        btnMinimizeToolbar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isMinimized = true;
+          sessionStorage.setItem('eskay_ui_minimized', 'true');
+          const toolbar = document.getElementById('eskay-toolbar');
+          if (toolbar) toolbar.classList.add('ek-minimized');
+        });
+      }
+
+      const btnToggleOptions = document.getElementById('ek-btn-toggle-options');
+      if (btnToggleOptions) {
+        btnToggleOptions.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isOptionsOpen = !isOptionsOpen;
+          sessionStorage.setItem('eskay_ui_options_open', isOptionsOpen ? 'true' : 'false');
+          const panel = document.getElementById('ek-options-panel');
+          if (panel) {
+            panel.style.display = isOptionsOpen ? 'grid' : 'none';
+          }
+          btnToggleOptions.classList.toggle('active', isOptionsOpen);
+        });
+      }
+
+      const btnToggleStats = document.getElementById('ek-btn-toggle-stats');
+      if (btnToggleStats) {
+        btnToggleStats.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isStatsOpen = !isStatsOpen;
+          sessionStorage.setItem('eskay_ui_stats_open', isStatsOpen ? 'true' : 'false');
+          const dashboard = document.getElementById('ek-dashboard-panel');
+          if (dashboard) {
+            dashboard.style.display = isStatsOpen ? 'flex' : 'none';
+          }
+          btnToggleStats.classList.toggle('active', isStatsOpen);
+        });
+      }
+
+      const btnToggleFloat = document.getElementById('ek-btn-toggle-float');
+      if (btnToggleFloat) {
+        btnToggleFloat.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isFloating = !isFloating;
+          sessionStorage.setItem('eskay_ui_floating', isFloating ? 'true' : 'false');
+          
+          const label = document.getElementById('ek-float-label');
+          if (label) label.textContent = isFloating ? 'Dock' : 'Float';
+          btnToggleFloat.classList.toggle('active', isFloating);
+
+          const toolbar = document.getElementById('eskay-toolbar');
+          if (toolbar) {
+            if (isFloating) {
+              toolbar.classList.add('ek-floating');
+              document.body.appendChild(toolbar);
+            } else {
+              toolbar.classList.remove('ek-floating');
+              const inputCard = this.findChatInputCard();
+              if (inputCard && inputCard.parentNode) {
+                inputCard.parentNode.insertBefore(toolbar, inputCard);
+              }
+            }
+          }
+        });
+      }
+
+      document.getElementById('ek-btn-minimize')?.addEventListener('click', () => { this.handleOptimize('minimize'); });
+      document.getElementById('ek-btn-maximize')?.addEventListener('click', () => { this.handleOptimize('maximize'); });
 
       const optKeys = ['clarify', 'step', 'persona', 'oneshot', 'multishot', 'format', 'context', 'brutal'];
       optKeys.forEach(key => {
@@ -3345,7 +3698,7 @@ ${fullChatHistoryText}
           });
         }
       });
-      document.getElementById('ek-btn-retrieve').addEventListener('click', () => { EskayExporter.exportContext(); });
+      document.getElementById('ek-btn-retrieve')?.addEventListener('click', () => { EskayExporter.exportContext(); });
 
       const btnRecall = document.getElementById('ek-btn-recall');
       if (btnRecall) {
@@ -3371,6 +3724,7 @@ ${fullChatHistoryText}
         });
       }
     },
+
     async handleMemoryRecall() {
       const inputEl = document.querySelector('[contenteditable="true"], textarea');
       if (!inputEl) return;
@@ -3500,34 +3854,44 @@ ${fullChatHistoryText}
         enableButton('ek-btn-minimize');
       }
     },
+
     updateDeltaDisplay(delta) {
       const display = document.getElementById('ek-delta-display');
-      if (!display) return;
-      if (delta > 0) {
-        display.innerText = `−${delta} tokens saved`;
-        display.style.color = '#10B981';
-        display.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-        display.style.borderColor = 'rgba(16, 185, 129, 0.2)';
-        display.style.display = 'block';
-      } else if (delta < 0) {
-        display.innerText = `+${Math.abs(delta)} tokens`;
-        display.style.color = 'var(--cb-violet)';
-        display.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
-        display.style.borderColor = 'rgba(124, 58, 237, 0.2)';
-        display.style.display = 'block';
-      } else {
-        display.innerText = `0 tokens saved`;
-        display.style.color = 'var(--cb-text-muted)';
-        display.style.backgroundColor = 'var(--cb-bg-hover)';
-        display.style.borderColor = 'var(--cb-border)';
-        display.style.display = 'block';
-      }
+      const miniDelta = document.getElementById('ek-minimized-delta');
+
+      const applyStyle = (el) => {
+        if (!el) return;
+        if (delta > 0) {
+          el.innerText = `−${delta} tokens saved`;
+          el.style.color = '#10B981';
+          el.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+          el.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+          el.style.display = 'inline-block';
+        } else if (delta < 0) {
+          el.innerText = `+${Math.abs(delta)} tokens`;
+          el.style.color = 'var(--cb-violet)';
+          el.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
+          el.style.borderColor = 'rgba(124, 58, 237, 0.2)';
+          el.style.display = 'inline-block';
+        } else {
+          el.innerText = `0 tokens saved`;
+          el.style.color = 'var(--cb-text-muted)';
+          el.style.backgroundColor = 'var(--cb-bg-hover)';
+          el.style.borderColor = 'var(--cb-border)';
+          el.style.display = 'none';
+        }
+      };
+
+      applyStyle(display);
+      applyStyle(miniDelta);
       sessionStorage.setItem('eskay_last_saved_delta', delta);
     },
+
     setPendingCache(pending) {
       pendingCache = pending;
       if (cacheTimeSpan) { cacheTimeSpan.style.color = pending ? '' : '#10B981'; }
     },
+
     updateUsageBars() {
       const usage = EskayUsageTracker.getUsage();
       const updateBar = (barId, metaId, markerId, pct, resetTime, windowHours) => {
@@ -3571,10 +3935,16 @@ ${fullChatHistoryText}
         ctxMeta.innerText = `~${contextTokens.toLocaleString()} tokens · ${Math.round(contextPct)}% of 200k`;
       }
 
+      const miniMeta = document.getElementById('ek-minimized-meta');
+      if (miniMeta) {
+        miniMeta.innerText = `~${contextTokens.toLocaleString()} tokens (${Math.round(contextPct)}%)`;
+      }
+
       this.updateHeaderMetrics(usage.context.tokens, usage.cache.resetTime);
       this.attachHeader();
       updateRetrieveButtonState();
     },
+
     updateHeaderMetrics(tokens, cachedUntil) {
       if (typeof tokens !== 'number' || tokens <= 0) {
         lengthDisplay.textContent = '';
@@ -3620,6 +3990,7 @@ ${fullChatHistoryText}
       }
       this._renderHeader();
     },
+
     _renderHeader() {
       headerDisplay.replaceChildren();
       const hasCache = !!cachedDisplay.textContent;
@@ -3627,6 +3998,7 @@ ${fullChatHistoryText}
       headerContainer.style.display = 'flex';
       headerDisplay.replaceChildren(cachedDisplay);
     },
+
     tick() {
       this.injectToolbar();
       this.attachHeader();
@@ -3698,6 +4070,9 @@ ${fullChatHistoryText}
           const elapsedMs = Math.max(0, Math.min(totalMs, Date.now() - windowStartMs));
           const elapsedPct = totalMs > 0 ? (elapsedMs / totalMs) * 100 : 0;
           marker.style.left = `${elapsedPct}%`;
+          marker.style.display = 'block';
+        } else if (marker) {
+          marker.style.display = 'none';
         }
       };
       tickBar('ek-meta-session', 'ek-marker-session', usage.session.pct, usage.session.resetTime, 5);
@@ -3712,6 +4087,11 @@ ${fullChatHistoryText}
       const ctxBar = document.getElementById('ek-bar-context');
       if (ctxBar) {
         ctxBar.style.width = `${contextPct}%`;
+      }
+
+      const miniMeta = document.getElementById('ek-minimized-meta');
+      if (miniMeta) {
+        miniMeta.innerText = `~${contextTokens.toLocaleString()} tokens (${Math.round(contextPct)}%)`;
       }
     },
     showToast(message) {

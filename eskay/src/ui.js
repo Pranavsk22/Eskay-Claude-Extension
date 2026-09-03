@@ -2,7 +2,11 @@
 (function() {
   'use strict';
 
-  let isPanelOpen = false;
+  let isOptionsOpen = false;
+  let isStatsOpen = true;
+  let isMinimized = false;
+  let isFloating = false;
+
   let headerContainer = null;
   let headerDisplay = null;
   let lengthGroup = null;
@@ -14,11 +18,6 @@
   let eskayWriting = false;
   let detectDebounce = null;
   let lastOptimizedText = '';
-
-  let sessionResetMs = null;
-  let weeklyResetMs = null;
-  let sessionWindowStartMs = null;
-  let weeklyWindowStartMs = null;
 
   // React-compatible input setting helper using execCommand to prevent text duplication
   function setInputValue(el, value) {
@@ -372,6 +371,12 @@
 
   const EskayUI = {
     init() {
+      // Read saved UI display states
+      isMinimized = sessionStorage.getItem('eskay_ui_minimized') === 'true';
+      isFloating = sessionStorage.getItem('eskay_ui_floating') === 'true';
+      isOptionsOpen = sessionStorage.getItem('eskay_ui_options_open') === 'true';
+      isStatsOpen = sessionStorage.getItem('eskay_ui_stats_open') !== 'false'; // default true
+
       // 1. Create header display elements
       headerContainer = document.createElement('div');
       headerContainer.className = 'ek-header-container';
@@ -415,21 +420,49 @@
       setupTooltip(cachedDisplay, makeTooltip("Conversation is actively cached in Claude's memory."), { topOffset: 8 });
     },
 
-    findChatInputContainer() {
-      const dropdown = document.querySelector(Eskay.DOM.MODEL_SELECTOR_DROPDOWN);
-      if (!dropdown) return null;
+    findChatInputCard() {
+      // 1. Try finding from contenteditable or textarea
+      const inputEl = document.querySelector('[contenteditable="true"], textarea');
+      if (inputEl) {
+        let cur = inputEl;
+        while (cur && cur !== document.body) {
+          const parent = cur.parentElement;
+          if (!parent || parent === document.body) break;
 
-      // Find the flex actions/toolbar row that holds buttons
-      let cur = dropdown;
-      while (cur && cur !== document.body) {
-        const style = window.getComputedStyle(cur);
-        if (style.display === 'flex' && style.flexDirection === 'row') {
-          const buttons = cur.querySelectorAll('button');
-          if (buttons.length > 1) return cur;
+          // If the element is a form or fieldset or container with buttons
+          const hasButtons = cur.querySelectorAll && cur.querySelectorAll('button').length >= 2;
+          const isCardWrapper = cur.tagName === 'FIELDSET' || 
+                                cur.tagName === 'FORM' ||
+                                cur.getAttribute('data-testid') === 'chat-input-container' ||
+                                cur.classList.contains('chat-input-wrapper');
+
+          if (isCardWrapper || (hasButtons && cur.querySelector('[contenteditable="true"], textarea'))) {
+            return cur;
+          }
+          cur = parent;
         }
-        cur = cur.parentElement;
+
+        // Direct fallbacks
+        const fieldset = inputEl.closest('fieldset');
+        if (fieldset) return fieldset;
+        const form = inputEl.closest('form');
+        if (form) return form;
+        return inputEl.parentElement?.parentElement || inputEl.parentElement;
       }
-      return dropdown.parentElement;
+
+      // 2. Fallback: find from dropdown
+      const dropdown = document.querySelector(Eskay.DOM.MODEL_SELECTOR_DROPDOWN);
+      if (dropdown) {
+        let cur = dropdown;
+        while (cur && cur !== document.body) {
+          if (cur.querySelector('[contenteditable="true"], textarea')) {
+            return cur;
+          }
+          cur = cur.parentElement;
+        }
+      }
+
+      return null;
     },
 
     attachHeader() {
@@ -443,12 +476,7 @@
       this._renderHeader();
     },
 
-    injectToolbar() {
-      if (document.getElementById('eskay-toolbar')) return;
-
-      const container = this.findChatInputContainer();
-      if (!container) return;
-
+    createToolbarElement() {
       const toolbar = document.createElement('div');
       toolbar.id = 'eskay-toolbar';
       
@@ -463,160 +491,284 @@
       const optBrutal = savedOpts.brutal ? 'checked' : '';
 
       toolbar.innerHTML = `
-        <div class="ek-header">
+        <!-- Minimized Pill View -->
+        <div class="ek-minimized-bar" id="ek-minimized-bar" title="Click to expand Eskay Controls">
           <div class="ek-logo-group">
             <span class="ek-logo-dot"></span>
             <span>Eskay</span>
           </div>
-          <button class="ek-toggle-sub ${isPanelOpen ? 'open' : ''}" id="ek-sub-toggle">
+          <span class="ek-minimized-meta" id="ek-minimized-meta">~0 tokens</span>
+          <span class="ek-delta" id="ek-minimized-delta" style="display: none;">−0 tokens saved</span>
+          <span class="ek-minimized-expand-icon">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-          </button>
+          </span>
         </div>
 
-        <div class="ek-sub-panel" id="ek-options-panel" style="display: ${isPanelOpen ? 'grid' : 'none'}">
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-clarify" ${optClarify}> 🧠 Ask clarification
-          </label>
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-step" ${optStep}> 🔢 Step-by-step
-          </label>
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-persona" ${optPersona}> 🎭 Set persona
-          </label>
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-oneshot" ${optOneShot}> 📌 One-shot
-          </label>
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-multishot" ${optMultiShot}> 🔁 Multi-shot
-          </label>
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-format" ${optFormat}> 📐 Specify format
-          </label>
-          <label class="ek-checkbox-label">
-            <input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context
-          </label>
-          <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; border-top: 1px solid var(--cb-border); padding-top: 8px; font-size: 11px;">
-            <span style="color: var(--cb-text-muted);">Inspection & Memory:</span>
-            <div style="display: flex; gap: 6px;">
-              <button class="ek-btn-clean" id="ek-btn-trajectory" title="Inspect conversation trajectory and structured chunks" style="background-color: rgba(124, 58, 237, 0.15) !important; color: #A78BFA !important; border-color: rgba(124, 58, 237, 0.3) !important;">Trajectory</button>
-              <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and consolidate near-duplicate memories">Consolidate</button>
+        <!-- Full Toolbar View -->
+        <div class="ek-full-toolbar" id="ek-full-toolbar">
+          <div class="ek-header">
+            <div class="ek-logo-group">
+              <span class="ek-logo-dot"></span>
+              <span>Eskay</span>
+              <div class="ek-delta" id="ek-delta-display">−0 tokens saved</div>
+            </div>
+            <div class="ek-header-tools">
+              <button class="ek-tool-pill ${isOptionsOpen ? 'active' : ''}" id="ek-btn-toggle-options" title="Toggle prompt sub-options & memory tools">
+                <span class="ek-tool-pill-icon">⚙</span>
+                <span>Options</span>
+              </button>
+              <button class="ek-tool-pill ${isStatsOpen ? 'active' : ''}" id="ek-btn-toggle-stats" title="Toggle usage statistics dashboard">
+                <span class="ek-tool-pill-icon">📊</span>
+                <span>Stats</span>
+              </button>
+              <button class="ek-tool-pill ${isFloating ? 'active' : ''}" id="ek-btn-toggle-float" title="Toggle floating companion mode">
+                <span class="ek-tool-pill-icon">📌</span>
+                <span id="ek-float-label">${isFloating ? 'Dock' : 'Float'}</span>
+              </button>
+              <button class="ek-tool-pill" id="ek-btn-minimize-toolbar" title="Collapse into mini pill">
+                <span class="ek-tool-pill-icon">−</span>
+              </button>
             </div>
           </div>
-        </div>
 
-        <div class="ek-actions-row">
-          <div class="ek-buttons">
-            <button class="ek-btn ek-btn-minimize" id="ek-btn-minimize">Minimise Tokens</button>
-            <button class="ek-btn ek-btn-maximize" id="ek-btn-maximize">Maximise Efficiency</button>
-            <label class="ek-brutal-switch-container">
-              <span class="ek-brutal-switch-label">Brutal Mode</span>
-              <input type="checkbox" id="ek-opt-brutal" class="ek-brutal-checkbox" ${optBrutal}>
-              <span class="ek-brutal-slider"></span>
+          <div class="ek-actions-row">
+            <div class="ek-buttons">
+              <button class="ek-btn ek-btn-minimize" id="ek-btn-minimize">Minimise Tokens</button>
+              <button class="ek-btn ek-btn-maximize" id="ek-btn-maximize">Maximise Efficiency</button>
+              <label class="ek-brutal-switch-container">
+                <span class="ek-brutal-switch-label">Brutal</span>
+                <input type="checkbox" id="ek-opt-brutal" class="ek-brutal-checkbox" ${optBrutal}>
+                <span class="ek-brutal-slider"></span>
+              </label>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+              <button class="ek-btn ek-btn-recall" id="ek-btn-recall" title="Recall relevant memories for this prompt">🔍 Recall</button>
+              <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" title="Index and export context">⬇ Export</button>
+            </div>
+          </div>
+
+          <div class="ek-sub-panel" id="ek-options-panel" style="display: ${isOptionsOpen ? 'grid' : 'none'}">
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-clarify" ${optClarify}> 🧠 Clarification
             </label>
-          </div>
-          <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
-            <button class="ek-btn ek-btn-recall" id="ek-btn-recall" title="Recall relevant memories for this prompt">🔍 Recall Memory</button>
-            <button class="ek-btn ek-btn-retrieve" id="ek-btn-retrieve" title="Index and export context">⬇ Retrieve Context</button>
-          </div>
-          <div class="ek-delta" id="ek-delta-display">−0 tokens saved</div>
-        </div>
-
-        <div class="ek-dashboard">
-          <div class="ek-bar-row" id="ek-row-session">
-            <div class="ek-bar-header">
-              <span class="ek-bar-label">SESSION</span>
-              <span class="ek-bar-meta" id="ek-meta-session">0% used · resets soon</span>
-            </div>
-            <div class="ek-bar-outer">
-              <div class="ek-bar-inner" id="ek-bar-session" style="width: 0%"></div>
-              <div class="ek-bar-marker" id="ek-marker-session" style="left: 0%"></div>
-            </div>
-          </div>
-
-          <div class="ek-bar-row" id="ek-row-weekly">
-            <div class="ek-bar-header">
-              <span class="ek-bar-label">WEEKLY</span>
-              <span class="ek-bar-meta" id="ek-meta-weekly">0% used · resets soon</span>
-            </div>
-            <div class="ek-bar-outer">
-              <div class="ek-bar-inner" id="ek-bar-weekly" style="width: 0%"></div>
-              <div class="ek-bar-marker" id="ek-marker-weekly" style="left: 0%"></div>
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-step" ${optStep}> 🔢 Step-by-step
+            </label>
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-persona" ${optPersona}> 🎭 Set persona
+            </label>
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-oneshot" ${optOneShot}> 📌 One-shot
+            </label>
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-multishot" ${optMultiShot}> 🔁 Multi-shot
+            </label>
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-format" ${optFormat}> 📐 Specify format
+            </label>
+            <label class="ek-checkbox-label">
+              <input type="checkbox" id="ek-opt-context" ${optContext}> 🧩 Request context
+            </label>
+            <div class="ek-memory-actions" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 6px; border-top: 1px solid var(--cb-border); padding-top: 6px; font-size: 11px;">
+              <span style="color: var(--cb-text-muted);">Inspection & Memory:</span>
+              <div style="display: flex; gap: 6px;">
+                <button class="ek-btn-clean" id="ek-btn-trajectory" title="Inspect conversation trajectory and structured chunks" style="background-color: rgba(124, 58, 237, 0.15) !important; color: #A78BFA !important; border-color: rgba(124, 58, 237, 0.3) !important;">Trajectory</button>
+                <button class="ek-btn-clean" id="ek-btn-clean" title="Clean and consolidate near-duplicate memories">Consolidate</button>
+              </div>
             </div>
           </div>
 
-          <div class="ek-bar-row" id="ek-row-context">
-            <div class="ek-bar-header">
-              <span class="ek-bar-label">CONTEXT</span>
-              <span class="ek-bar-meta" id="ek-meta-context">~0 tokens · 0% of 200k</span>
+          <div class="ek-dashboard" id="ek-dashboard-panel" style="display: ${isStatsOpen ? 'flex' : 'none'}">
+            <div class="ek-bar-row" id="ek-row-session">
+              <div class="ek-bar-header">
+                <span class="ek-bar-label">SESSION</span>
+                <span class="ek-bar-meta" id="ek-meta-session">0% used · resets soon</span>
+              </div>
+              <div class="ek-bar-outer">
+                <div class="ek-bar-inner" id="ek-bar-session" style="width: 0%"></div>
+                <div class="ek-bar-marker" id="ek-marker-session" style="left: 0%"></div>
+              </div>
             </div>
-            <div class="ek-bar-outer">
-              <div class="ek-bar-inner" id="ek-bar-context" style="width: 0%"></div>
+
+            <div class="ek-bar-row" id="ek-row-weekly">
+              <div class="ek-bar-header">
+                <span class="ek-bar-label">WEEKLY</span>
+                <span class="ek-bar-meta" id="ek-meta-weekly">0% used · resets soon</span>
+              </div>
+              <div class="ek-bar-outer">
+                <div class="ek-bar-inner" id="ek-bar-weekly" style="width: 0%"></div>
+                <div class="ek-bar-marker" id="ek-marker-weekly" style="left: 0%"></div>
+              </div>
+            </div>
+
+            <div class="ek-bar-row" id="ek-row-context">
+              <div class="ek-bar-header">
+                <span class="ek-bar-label">CONTEXT</span>
+                <span class="ek-bar-meta" id="ek-meta-context">~0 tokens · 0% of 200k</span>
+              </div>
+              <div class="ek-bar-outer">
+                <div class="ek-bar-inner" id="ek-bar-context" style="width: 0%"></div>
+              </div>
             </div>
           </div>
         </div>
       `;
 
-      // Insert toolbar inline below the input card wrapper (sibling of the wrapper, so it sits outside)
-      const inputCard = container.parentNode;
-      if (inputCard) {
-        inputCard.style.flexShrink = '0';
+      return toolbar;
+    },
+
+    injectToolbar() {
+      let toolbar = document.getElementById('eskay-toolbar');
+      const shouldFloat = sessionStorage.getItem('eskay_ui_floating') === 'true';
+      const shouldMinimize = sessionStorage.getItem('eskay_ui_minimized') === 'true';
+
+      const isFirstCreation = !toolbar;
+      if (isFirstCreation) {
+        toolbar = this.createToolbarElement();
       }
-      if (inputCard && inputCard.parentNode) {
-        inputCard.parentNode.insertBefore(toolbar, inputCard.nextSibling);
+
+      if (shouldFloat) {
+        toolbar.classList.add('ek-floating');
+        if (toolbar.parentNode !== document.body) {
+          document.body.appendChild(toolbar);
+        }
       } else {
-        container.parentNode.insertBefore(toolbar, container.nextSibling);
+        toolbar.classList.remove('ek-floating');
+        const inputCard = this.findChatInputCard();
+        if (!inputCard || !inputCard.parentNode) return;
+
+        // Position toolbar cleanly ABOVE / BEFORE the input card
+        if (toolbar.nextSibling !== inputCard || toolbar.parentNode !== inputCard.parentNode) {
+          inputCard.parentNode.insertBefore(toolbar, inputCard);
+        }
       }
 
-      // Attach event listeners
-      this.attachListeners();
-
-      // Tooltips for usage rows
-      setupTooltip(document.getElementById('ek-row-session'), makeTooltip("5-hour rolling usage.\nBar: message count ratio used.\nVertical line: elapsed time ratio inside the window."), { topOffset: 8 });
-      setupTooltip(document.getElementById('ek-row-weekly'), makeTooltip("7-day rolling usage.\nBar: message count ratio used.\nVertical line: elapsed time ratio inside the window."), { topOffset: 8 });
-      setupTooltip(document.getElementById('ek-row-context'), makeTooltip("Approximate BPE token count for current conversation.\nBar scale: 200k tokens context limit."), { topOffset: 8 });
-
-      // Retrieve cached delta
-      const savedDelta = sessionStorage.getItem('eskay_last_saved_delta');
-      if (savedDelta) {
-        this.updateDeltaDisplay(parseInt(savedDelta, 10));
-      }
-
-      this.updateUsageBars();
-      updateThemeClass();
-      updateRetrieveButtonState();
-      updateCheckboxDisableState();
-
-      const inputEl = document.querySelector('[contenteditable="true"], textarea');
-      const isEmpty = !inputEl || !(inputEl.innerText || inputEl.value || '').trim();
-      if (isEmpty) {
-        disableButton('ek-btn-minimize');
-        disableButton('ek-btn-maximize');
+      if (shouldMinimize) {
+        toolbar.classList.add('ek-minimized');
       } else {
-        enableButton('ek-btn-minimize');
-        enableButton('ek-btn-maximize');
+        toolbar.classList.remove('ek-minimized');
+      }
+
+      if (isFirstCreation) {
+        // Attach event listeners
+        this.attachListeners();
+
+        // Tooltips for usage rows
+        setupTooltip(document.getElementById('ek-row-session'), makeTooltip("5-hour rolling usage.\nBar: message count ratio used.\nVertical line: elapsed time ratio inside the window."), { topOffset: 8 });
+        setupTooltip(document.getElementById('ek-row-weekly'), makeTooltip("7-day rolling usage.\nBar: message count ratio used.\nVertical line: elapsed time ratio inside the window."), { topOffset: 8 });
+        setupTooltip(document.getElementById('ek-row-context'), makeTooltip("Approximate BPE token count for current conversation.\nBar scale: 200k tokens context limit."), { topOffset: 8 });
+
+        // Retrieve cached delta
+        const savedDelta = sessionStorage.getItem('eskay_last_saved_delta');
+        if (savedDelta) {
+          this.updateDeltaDisplay(parseInt(savedDelta, 10));
+        }
+
+        this.updateUsageBars();
+        updateThemeClass();
+        updateRetrieveButtonState();
+        updateCheckboxDisableState();
+
+        const inputEl = document.querySelector('[contenteditable="true"], textarea');
+        const isEmpty = !inputEl || !(inputEl.innerText || inputEl.value || '').trim();
+        if (isEmpty) {
+          disableButton('ek-btn-minimize');
+          disableButton('ek-btn-maximize');
+        } else {
+          enableButton('ek-btn-minimize');
+          enableButton('ek-btn-maximize');
+        }
       }
     },
 
     attachListeners() {
-      document.getElementById('ek-sub-toggle').addEventListener('click', () => {
-        isPanelOpen = !isPanelOpen;
-        const panel = document.getElementById('ek-options-panel');
-        const btn = document.getElementById('ek-sub-toggle');
-        if (isPanelOpen) {
-          panel.style.display = 'grid';
-          btn.classList.add('open');
-        } else {
-          panel.style.display = 'none';
-          btn.classList.remove('open');
-        }
-      });
+      // Minimized pill expand click
+      const minimizedBar = document.getElementById('ek-minimized-bar');
+      if (minimizedBar) {
+        minimizedBar.addEventListener('click', () => {
+          isMinimized = false;
+          sessionStorage.setItem('eskay_ui_minimized', 'false');
+          const toolbar = document.getElementById('eskay-toolbar');
+          if (toolbar) toolbar.classList.remove('ek-minimized');
+        });
+      }
 
-      document.getElementById('ek-btn-minimize').addEventListener('click', () => {
+      // Minimize button click
+      const btnMinimizeToolbar = document.getElementById('ek-btn-minimize-toolbar');
+      if (btnMinimizeToolbar) {
+        btnMinimizeToolbar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isMinimized = true;
+          sessionStorage.setItem('eskay_ui_minimized', 'true');
+          const toolbar = document.getElementById('eskay-toolbar');
+          if (toolbar) toolbar.classList.add('ek-minimized');
+        });
+      }
+
+      // Options panel toggle
+      const btnToggleOptions = document.getElementById('ek-btn-toggle-options');
+      if (btnToggleOptions) {
+        btnToggleOptions.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isOptionsOpen = !isOptionsOpen;
+          sessionStorage.setItem('eskay_ui_options_open', isOptionsOpen ? 'true' : 'false');
+          const panel = document.getElementById('ek-options-panel');
+          if (panel) {
+            panel.style.display = isOptionsOpen ? 'grid' : 'none';
+          }
+          btnToggleOptions.classList.toggle('active', isOptionsOpen);
+        });
+      }
+
+      // Stats dashboard toggle
+      const btnToggleStats = document.getElementById('ek-btn-toggle-stats');
+      if (btnToggleStats) {
+        btnToggleStats.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isStatsOpen = !isStatsOpen;
+          sessionStorage.setItem('eskay_ui_stats_open', isStatsOpen ? 'true' : 'false');
+          const dashboard = document.getElementById('ek-dashboard-panel');
+          if (dashboard) {
+            dashboard.style.display = isStatsOpen ? 'flex' : 'none';
+          }
+          btnToggleStats.classList.toggle('active', isStatsOpen);
+        });
+      }
+
+      // Float / Dock toggle
+      const btnToggleFloat = document.getElementById('ek-btn-toggle-float');
+      if (btnToggleFloat) {
+        btnToggleFloat.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isFloating = !isFloating;
+          sessionStorage.setItem('eskay_ui_floating', isFloating ? 'true' : 'false');
+          
+          const label = document.getElementById('ek-float-label');
+          if (label) label.textContent = isFloating ? 'Dock' : 'Float';
+          btnToggleFloat.classList.toggle('active', isFloating);
+
+          const toolbar = document.getElementById('eskay-toolbar');
+          if (toolbar) {
+            if (isFloating) {
+              toolbar.classList.add('ek-floating');
+              document.body.appendChild(toolbar);
+            } else {
+              toolbar.classList.remove('ek-floating');
+              const inputCard = this.findChatInputCard();
+              if (inputCard && inputCard.parentNode) {
+                inputCard.parentNode.insertBefore(toolbar, inputCard);
+              }
+            }
+          }
+        });
+      }
+
+      document.getElementById('ek-btn-minimize')?.addEventListener('click', () => {
         this.handleOptimize('minimize');
       });
-      document.getElementById('ek-btn-maximize').addEventListener('click', () => {
+      document.getElementById('ek-btn-maximize')?.addEventListener('click', () => {
         this.handleOptimize('maximize');
       });
 
@@ -630,7 +782,7 @@
         }
       });
 
-      document.getElementById('ek-btn-retrieve').addEventListener('click', () => {
+      document.getElementById('ek-btn-retrieve')?.addEventListener('click', () => {
         if (window.EskayExporter) {
           window.EskayExporter.exportContext();
         }
@@ -826,27 +978,33 @@
 
     updateDeltaDisplay(delta) {
       const display = document.getElementById('ek-delta-display');
-      if (!display) return;
+      const miniDelta = document.getElementById('ek-minimized-delta');
 
-      if (delta > 0) {
-        display.innerText = `−${delta} tokens saved`;
-        display.style.color = '#10B981';
-        display.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-        display.style.borderColor = 'rgba(16, 185, 129, 0.2)';
-        display.style.display = 'block';
-      } else if (delta < 0) {
-        display.innerText = `+${Math.abs(delta)} tokens`;
-        display.style.color = 'var(--cb-violet)';
-        display.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
-        display.style.borderColor = 'rgba(124, 58, 237, 0.2)';
-        display.style.display = 'block';
-      } else {
-        display.innerText = `0 tokens saved`;
-        display.style.color = 'var(--cb-text-muted)';
-        display.style.backgroundColor = 'var(--cb-bg-hover)';
-        display.style.borderColor = 'var(--cb-border)';
-        display.style.display = 'block';
-      }
+      const applyStyle = (el) => {
+        if (!el) return;
+        if (delta > 0) {
+          el.innerText = `−${delta} tokens saved`;
+          el.style.color = '#10B981';
+          el.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+          el.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+          el.style.display = 'inline-block';
+        } else if (delta < 0) {
+          el.innerText = `+${Math.abs(delta)} tokens`;
+          el.style.color = 'var(--cb-violet)';
+          el.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
+          el.style.borderColor = 'rgba(124, 58, 237, 0.2)';
+          el.style.display = 'inline-block';
+        } else {
+          el.innerText = `0 tokens saved`;
+          el.style.color = 'var(--cb-text-muted)';
+          el.style.backgroundColor = 'var(--cb-bg-hover)';
+          el.style.borderColor = 'var(--cb-border)';
+          el.style.display = 'none';
+        }
+      };
+
+      applyStyle(display);
+      applyStyle(miniDelta);
       sessionStorage.setItem('eskay_last_saved_delta', delta);
     },
 
@@ -905,6 +1063,12 @@
         if (contextPct > 95) ctxBar.classList.add('critical');
         else if (contextPct > 80) ctxBar.classList.add('warning');
         ctxMeta.innerText = `~${contextTokens.toLocaleString()} tokens · ${Math.round(contextPct)}% of 200k`;
+      }
+
+      // Update minimized pill meta
+      const miniMeta = document.getElementById('ek-minimized-meta');
+      if (miniMeta) {
+        miniMeta.innerText = `~${contextTokens.toLocaleString()} tokens (${Math.round(contextPct)}%)`;
       }
 
       // In case we reattached or loaded, make sure header is updated
@@ -1078,6 +1242,11 @@
         const ctxBar = document.getElementById('ek-bar-context');
         if (ctxBar) {
           ctxBar.style.width = `${contextPct}%`;
+        }
+
+        const miniMeta = document.getElementById('ek-minimized-meta');
+        if (miniMeta) {
+          miniMeta.innerText = `~${contextTokens.toLocaleString()} tokens (${Math.round(contextPct)}%)`;
         }
       }
     },
