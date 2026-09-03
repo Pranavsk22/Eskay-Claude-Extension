@@ -1,10 +1,85 @@
 # Eskay — Claude.ai Usage Dashboard & Prompt Optimization Platform
 
-Eskay is a privacy-first browser extension and userscript engineered specifically for **Claude.ai**. It prevents context window overflow, eliminates usage limit surprises, optimizes prompts via a domain-routing engine, and maintains an episodic, vector-backed memory layer across chat sessions — running 100% locally in your browser with zero external dependencies.
+Eskay is a privacy-first browser extension and userscript engineered specifically for **Claude.ai**. It prevents context window overflow, eliminates usage limit surprises, optimizes prompts via a 49-persona routing engine, and maintains an episodic, vector-backed memory layer across chat sessions — running 100% locally in your browser with zero external dependencies.
 
 ---
 
-## Core Capabilities
+## ⚡ Quick Start: How to Install & Use Eskay
+
+### 📦 1. Download & Install the Extension (Recommended)
+
+1. **Download the Extension:**
+   > ### 🚀 [Click here to download the ZIP (eskay.zip)](https://github.com/Pranavsk22/Eskay-Claude-Extension/raw/main/eskay.zip)
+
+2. **Unpack / Extract the ZIP:**
+   - Extract the downloaded `eskay.zip` file to a folder on your computer (e.g., in your Documents or Downloads folder).
+
+3. **Load in Your Browser:**
+   - Open your browser's extension settings page:
+     - **Google Chrome / Brave:** Navigate to `chrome://extensions/`
+     - **Microsoft Edge:** Navigate to `edge://extensions/`
+   - In the top right corner, turn **ON** the **Developer mode** toggle.
+   - Click the **Load unpacked** button in the top left.
+   - Select the extracted `eskay` folder (the folder containing `manifest.json`).
+
+4. **Launch Claude:**
+   - Open or refresh [https://claude.ai](https://claude.ai).
+   - You will see the Eskay companion toolbar positioned cleanly above the prompt input box!
+
+---
+
+### 🐒 Option 2: Install via Tampermonkey Userscript
+
+If you prefer using a userscript manager instead of an unpacked extension:
+1. Install the [Tampermonkey](https://www.tampermonkey.net/) extension in your browser.
+2. Click **Create a new script** in Tampermonkey.
+3. Copy and paste the complete code from [`eskay/userscript/eskay.user.js`](https://github.com/Pranavsk22/Eskay-Claude-Extension/blob/main/eskay/userscript/eskay.user.js).
+4. Press `Ctrl+S` (or `Cmd+S`) to save the script, then refresh [https://claude.ai](https://claude.ai).
+
+---
+
+## 📖 How to Use Eskay on Claude.ai
+
+Once installed, Eskay appears directly on Claude.ai as a native-feeling companion bar positioned cleanly **above the prompt input box** (so it never blocks the `+` attach button, cowork switch, model selector dropdown, or microphone button):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔴 Eskay  [-42 tokens saved]              [⚙ Options] [📊 Stats] [📌 Float] [−]│
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [⚡ Minimise Tokens]  [🚀 Maximise Efficiency]  [🔥 Brutal]   [🔍 Recall] [⬇ Export]│
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 🧠 Clarification  🔢 Step-by-step  🎭 Set persona  📌 One-shot  📐 Specify format  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ SESSION: [████████░░░░░░░░░░] 28% used · resets in 3h 12m                    │
+│ WEEKLY:  [████████████░░░░░░] 45% used · resets in 2d 14h                    │
+│ CONTEXT: [████░░░░░░░░░░░░░░] ~14,200 tokens · 7% of 200k                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Optimize Your Prompts with One Click
+- **`Minimise Tokens`**: Strips conversational fluff, filler words, and redundant meta-phrasing while preserving technical terms and code, saving tokens and speeding up generation.
+- **`Maximise Efficiency`**: Automatically analyzes your prompt's intent, detects the subject domain, and injects the optimal persona from a matrix of **49 domain experts**, along with structured instructions.
+- **`Brutal Mode`**: Injects rigorous, unglazed analytical critique constraints for deep code review, logic audits, and direct technical feedback without sugarcoating.
+
+### 2. Monitor Real-Time Quotas & Context
+- **Session Bar (5-Hour Rolling Window)**: Displays your message count usage ratio alongside a white vertical marker indicating the elapsed time within the current 5-hour window.
+- **Weekly Bar (7-Day Rolling Window)**: Tracks long-term weekly consumption and exact reset countdowns.
+- **Context Counter (200,000 Tokens)**: Computes approximate BPE token counts for your active conversation in real time.
+- **Ephemeral Cache Timer (5 Minutes)**: Header badge indicates how much time remains on Claude's active prompt cache.
+
+### 3. Maintain Cross-Session Persistent Memory
+- **`⬇ Export Context`**: Scrapes the current chat, extracts goals, decisions, constraints, next steps, and code artifacts, indexes them into local browser vector storage, and downloads a clean handoff `MASTER_PROMPT.md` file.
+- **`🔍 Recall Memory`**: Computes local 384-dimensional embeddings of your current draft, searches IndexedDB using cosine similarity, and automatically prepends relevant past context into your prompt.
+- **`🧹 Consolidate Memory`**: Prunes near-duplicate memory records (cosine similarity > 0.85) to prevent database bloat.
+
+### 4. Customizable UI Modes
+- **Capsule Pill Mode (`−` Button)**: Collapses the toolbar into an ultra-slim capsule badge (`⚡ Eskay · 14.2k tokens ▾`) taking ~28px height right above your prompt box. Click it anytime to expand.
+- **Floating Widget Mode (`📌 Float` Button)**: Detaches Eskay into a floating glassmorphic companion widget that can sit anywhere in a corner of your screen.
+- **Collapsible Panels (`⚙ Options` & `📊 Stats`)**: Easily expand or hide the prompt checkboxes and usage statistics whenever you want maximum screen space.
+
+---
+
+## 🌟 Core Features & Capabilities
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -40,12 +115,12 @@ Eskay is a privacy-first browser extension and userscript engineered specificall
 
 ---
 
-## Architecture & System Flow
+## 🏗️ System Architecture & Data Flow
 
 ```
 [Claude.ai SPA] ──► [inject.js (Main World)] ──(postMessage)──► [content.js (Extension World)]
                             │                                                │
-                 Interceps fetch/SSE streams                        Updates UI, Tokenizer &
+                 Intercepts fetch/SSE streams                       Updates UI, Tokenizer &
                  Usage limits & JSON trees                          IndexedDB Vector Store
 ```
 
@@ -53,9 +128,9 @@ All vector calculations, text processing, and data persistence execute strictly 
 
 ---
 
-## Test & Evaluation Rigor
+## 🧪 Test & Evaluation Rigor
 
-Eskay enforces automated regression suites and evaluation harnesses before any build is merged:
+Eskay enforces automated regression suites and evaluation harnesses:
 
 | Test Harness | Target / Metric | Description |
 | :--- | :--- | :--- |
@@ -82,28 +157,7 @@ node test/consolidation-test-runner.js
 
 ---
 
-## Installation Guide
-
-### Option 1: Chrome, Brave, Edge Extension (Recommended)
-
-1. Clone or download this repository.
-2. Open your browser extension settings:
-   - **Chrome / Brave:** `chrome://extensions/`
-   - **Edge:** `edge://extensions/`
-3. Enable **Developer mode** (toggle in upper right).
-4. Click **Load unpacked** (top left).
-5. Select the `eskay` folder (the directory containing `manifest.json`).
-6. Navigate to `https://claude.ai` to begin using Eskay.
-
-### Option 2: Tampermonkey Userscript
-
-1. Install the [Tampermonkey](https://www.tampermonkey.net/) extension.
-2. Create a new script in Tampermonkey and paste the contents of `eskay/userscript/eskay.user.js`.
-3. Save the script and refresh `https://claude.ai`.
-
----
-
-## Interactive Trajectory Inspection Tool
+## 🔍 Interactive Trajectory Inspection Tool
 
 Eskay includes a standalone visualizer tool for inspecting scraped trajectories, debugging agent execution trees, and reviewing `MASTER_PROMPT.md` handoffs:
 
@@ -112,14 +166,14 @@ Eskay includes a standalone visualizer tool for inspecting scraped trajectories,
 
 ---
 
-## Privacy & Security
+## 🔒 Privacy & Security
 
-* **Zero Network Calls**: All memory indexing, vector search, and NLP transformations run in-browser.
+* **Zero Network Calls**: All memory indexing, vector search, and NLP transformations run locally in-browser.
 * **Local Storage Only**: Memory records and conversation snapshots are stored strictly in client-side IndexedDB.
 * **No Telemetry**: No tracking pixels, third-party CDNs, or external telemetry scripts.
 
 ---
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
